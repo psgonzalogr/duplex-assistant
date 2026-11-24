@@ -20,6 +20,10 @@ function clickText(text) {
 export async function selftest(app, samplePath) {
   const T = window.daTest;
   const real = window.da;
+  // Las capturas son públicas: se desenfocan los nombres de archivo de la lista.
+  document.head.append(Object.assign(document.createElement('style'), {
+    textContent: '.file-row .fname { filter: blur(5px); }',
+  }));
   // Impresora simulada: nada llega al papel y la configuración real no cambia.
   let fakeProfile = null;
   app.api = {
