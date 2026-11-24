@@ -4,6 +4,7 @@ import { mountPrinter } from './views/printer.js';
 import { runPrint } from './views/run.js';
 import { runCalibration } from './views/calibrate.js';
 import logoSafeTech from '../../assets/logo-safetech-dark.png';
+import { createUpdater } from './update.js';
 
 export const MARK = `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
   <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E23434"/><stop offset="1" stop-color="#991B1B"/></linearGradient></defs>
@@ -67,11 +68,13 @@ function shell() {
     h('div.brand', h('span.brand-mark', { html: MARK }), h('span.brand-name', 'Duplex Assistant ', h('span', '· doble cara fácil'))),
     nav,
     h('div.spacer'),
+    app.updater.pill,
     h('button.printer-pill', { onclick: () => go('printer'), title: 'Impresora en uso' }, pillDot, icon('printer', 'sm'), pillName));
   const foot = h('footer.footer',
     h('span.made', 'Desarrollado por', h('img', { src: logoSafeTech, alt: 'SafeTech' })),
     h('a', { href: '#', onclick: (e) => { e.preventDefault(); app.api.openExternal('https://safe-tech.cl/'); } }, 'safe-tech.cl'),
     h('div.spacer'),
+    h('button.linkish', { onclick: () => app.updater.checkNow() }, 'Buscar actualizaciones'),
     h('a', { href: '#', onclick: (e) => { e.preventDefault(); app.api.openExternal('https://github.com/psgonzalogr/duplex-assistant/'); } }, 'Ayuda y código'),
     h('span.tnum', { id: 'ver' }, ''));
   clear(document.getElementById('app'), top, main, foot);
@@ -91,6 +94,7 @@ function go(view, opts = {}) {
   for (const [k, b] of Object.entries(navBtns)) b.setAttribute('aria-current', k === view ? 'page' : 'false');
   const busy = view === 'run' || view === 'calibrate';
   Object.values(navBtns).forEach((b) => (b.disabled = busy));
+  app.updater?.setBusy(busy);
   if (view === 'home') app.current = mountHome(main, app);
   else if (view === 'printer') app.current = mountPrinter(main, app);
   else if (view === 'run') runPrint(main, app, opts.job).catch(fail);
@@ -146,8 +150,9 @@ async function rescan() {
 }
 
 async function start() {
-  shell();
   S.info = await app.api.info();
+  app.updater = createUpdater(app);
+  shell();
   document.getElementById('ver').textContent = `v${S.info.version}`;
   document.documentElement.dataset.platform = S.info.platform;
   await loadPrinters();

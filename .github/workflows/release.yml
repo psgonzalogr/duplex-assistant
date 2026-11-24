@@ -18,10 +18,15 @@ jobs:
         include:
           - os: windows-latest
             script: dist:win
-            files: release/Duplex-Assistant-Setup-*.exe
+            files: |
+              release/Duplex-Assistant-Setup-*.exe
+              release/Duplex-Assistant-Setup-*.exe.blockmap
+              release/latest.yml
           - os: ubuntu-latest
             script: dist:linux
-            files: release/Duplex-Assistant-*.AppImage
+            files: |
+              release/Duplex-Assistant-*.AppImage
+              release/latest-linux.yml
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4

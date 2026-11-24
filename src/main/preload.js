@@ -39,6 +39,16 @@ contextBridge.exposeInMainWorld('da', {
   queue: (printer) => invoke('job:queue', printer),
   calibration: () => invoke('job:calibration'),
   learnSpeed: (printer, sheets, seconds) => invoke('job:learn-speed', printer, sheets, seconds),
+
+  updateState: () => invoke('update:state'),
+  checkUpdate: () => invoke('update:check'),
+  downloadUpdate: () => invoke('update:download'),
+  installUpdate: () => invoke('update:install'),
+  onUpdate: (cb) => {
+    const h = (_e, s) => cb(s);
+    ipcRenderer.on('update:state', h);
+    return () => ipcRenderer.removeListener('update:state', h);
+  },
 });
 
 // Solo responde cuando la app se abrió en modo autoprueba (DA_SELFTEST).

@@ -9,6 +9,7 @@ const store = require('./store');
 const compose = require('./compose');
 const convert = require('./convert');
 const scanner = require('./scanner');
+const updater = require('./updater');
 const printing = process.platform === 'win32' ? require('./printing/windows') : require('./printing/linux');
 
 const RENDERER = path.join(__dirname, '..', '..', 'dist', 'renderer');
@@ -81,6 +82,11 @@ function registerIpc() {
   handle('app:open-external', (url) => {
     if (/^https:\/\/([a-z0-9-]+\.)*(safe-tech\.cl|github\.com)\//i.test(url)) shell.openExternal(url);
   });
+
+  handle('update:state', () => updater.getState());
+  handle('update:check', () => updater.check());
+  handle('update:download', () => updater.download());
+  handle('update:install', () => updater.install());
 
   handle('printers:list', async () => {
     const list = await win.webContents.getPrintersAsync();
@@ -181,6 +187,7 @@ app.whenReady().then(() => {
   registerIpc();
   if (SELFTEST) registerSelftest();
   createWindow();
+  if (!SELFTEST) updater.init((s) => { if (win && !win.isDestroyed()) win.webContents.send('update:state', s); });
 });
 
 app.on('window-all-closed', () => app.quit());

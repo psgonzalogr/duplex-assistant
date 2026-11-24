@@ -21,6 +21,7 @@ Windows y Linux · Desarrollado por <a href="https://safe-tech.cl">SafeTech</a><
   - En Windows, abre la ventana del driver (calidad, tipo de papel…) y guarda esos ajustes **solo para esta app**.
   - En Linux, muestra las opciones CUPS de la impresora.
 - **Si se atasca el papel**: puedes repetir los frentes del lote.
+- **Se actualiza sola, si tú quieres**: al abrir revisa si hay una versión nueva en GitHub y te avisa. La descarga solo empieza si aprietas **Actualizar** y la instalación con **Reiniciar y actualizar**. Nunca interrumpe una impresión. También puedes buscar a mano desde «Buscar actualizaciones», en el pie de la ventana. Funciona con el instalador de Windows y con el AppImage de Linux.
 
 | Dar vuelta el mazo | Calibración |
 |---|---|

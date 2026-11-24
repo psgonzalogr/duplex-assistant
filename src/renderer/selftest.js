@@ -44,6 +44,20 @@ export async function selftest(app, samplePath) {
     await wait(2500);
     await T.capture(`${tag}-01-inicio`);
 
+    app.updater.show({ status: 'available', version: '1.1.0', notes: 'Actualizaciones automáticas desde GitHub.\nMejoras de diseño.' });
+    await wait(500);
+    await T.capture(`${tag}-12-actualizacion`);
+    app.updater.show({ status: 'downloading', version: '1.1.0', percent: 46, transferred: 58e6, total: 125e6 });
+    await wait(300);
+    await T.capture(`${tag}-13-descargando`);
+    app.updater.show({ status: 'ready', version: '1.1.0' });
+    await wait(300);
+    await T.capture(`${tag}-14-lista`);
+    document.querySelector('.uc-close')?.click();
+    await wait(300);
+    await T.capture(`${tag}-15-boton-barra`);
+    app.updater.show({ status: 'none' });
+
     const name = samplePath.split(/[\\/]/).pop();
     app.current.select({ path: samplePath, name, dir: samplePath.slice(0, -name.length - 1), kind: 'pdf', size: 1, mtime: Date.now() });
     await until(() => app.S.prepared);
