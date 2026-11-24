@@ -95,12 +95,16 @@ async function openIn(app, file) {
  */
 function findExported(file, since) {
   const dir = path.dirname(file);
-  const base = path.basename(file, path.extname(file)).toLowerCase();
+  const base = path.basename(file, path.extname(file));
+  // Mismo nombre que el documento; solo se aceptan las variantes que agregan los programas al repetir
+  // un nombre («Informe (1).pdf», «Informe-1.pdf», «Informe_2.pdf»). «Informe final.pdf» no sirve.
+  const esc = base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const same = new RegExp(`^${esc}(?:\\s?\\(\\d+\\)|[-_ ]\\d+)?\\.pdf$`, 'i');
   let best = null;
   let list = [];
   try { list = fs.readdirSync(dir); } catch { return null; }
   for (const n of list) {
-    if (!/\.pdf$/i.test(n) || !n.toLowerCase().startsWith(base)) continue;
+    if (!same.test(n)) continue;
     const p = path.join(dir, n);
     let st;
     try { st = fs.statSync(p); } catch { continue; }

@@ -43,6 +43,9 @@ function createWindow() {
       sandbox: true,
       nodeIntegration: false,
       autoplayPolicy: 'no-user-gesture-required', // la guía por voz habla apenas se abre la app
+      // Con la ventana tapada (p. ej. detrás de WPS o de otra app mientras imprime), Chromium frena los
+      // temporizadores hasta una vez por minuto: el avance y la detección del PDF exportado se atrasaban.
+      backgroundThrottling: false,
     },
   });
   win.setMenuBarVisibility(false);
@@ -145,6 +148,9 @@ function registerIpc() {
   });
   // Exportación asistida: abrir en otro programa y recoger el PDF que la persona exporte
   const lastSize = new Map();
+  // Solo se busca el PDF exportado junto a un documento que se abrió desde la app (office:open):
+  // así la interfaz no puede autorizar la lectura de PDFs de cualquier carpeta.
+  const assistFiles = new Set();
   const asPrepared = async (pdfPath, via) => {
     allowedPdfs.add(pdfPath);
     return { pdfPath, kind: 'pdf', via, pages: await compose.pageCount(pdfPath) };
@@ -158,10 +164,12 @@ function registerIpc() {
     const app = officeApps.appsFor(convert.kindOf(file)).find((a) => a.id === id);
     if (!app) throw new Error('Ese programa ya no está disponible.');
     lastSize.delete(file);
+    assistFiles.add(file);
     await officeApps.openIn(app, file);
     return true;
   });
   handle('office:find-pdf', async (file, since, via) => {
+    if (!assistFiles.has(file)) return null;
     const f = officeApps.findExported(file, Number(since) || 0);
     if (!f) return null;
     // Se acepta cuando el tamaño no cambió desde la revisión anterior (el programa terminó de escribirlo)

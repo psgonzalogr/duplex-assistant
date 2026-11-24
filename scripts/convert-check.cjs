@@ -12,6 +12,7 @@ app.whenReady().then(async () => {
       console.log(`OK  ${r.kind.padEnd(10)} ${String(await compose.pageCount(r.pdfPath)).padStart(3)} pág  ${((Date.now() - t0) / 1000).toFixed(1)} s  vía ${r.via}  ${f}`);
     } catch (e) {
       console.log(`ERR ${f}: ${e.message}`);
+      if (e.details) console.log(`    detalle: ${e.details.replace(/\s+/g, ' ').slice(0, 600)}`);
     }
   }
   app.quit();

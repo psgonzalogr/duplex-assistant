@@ -118,9 +118,13 @@ async function queue(printer) {
 async function cancel(printer, ref) {
   if (!ref) return false;
   const q = (s) => String(s).replace(/'/g, "''");
-  const cmd = `Get-PrintJob -PrinterName '${q(printer)}' -ErrorAction SilentlyContinue | Where-Object { $_.DocumentName -like '*${q(ref)}*' } | Remove-PrintJob -ErrorAction SilentlyContinue`;
+  // -like trata [ ] como comodines: se escapan. Responde cuántos trabajos quitó de verdad
+  // (con 0 la app no debe decir que detuvo la impresión).
+  const pattern = `*${q(ref).replace(/([[\]*?`])/g, '`$1')}*`;
+  const cmd = `$j = @(Get-PrintJob -PrinterName '${q(printer)}' -ErrorAction SilentlyContinue | Where-Object { $_.DocumentName -like '${pattern}' }); `
+    + '$n = 0; foreach ($x in $j) { try { $x | Remove-PrintJob -ErrorAction Stop; $n++ } catch {} }; $n';
   const r = await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', cmd], { timeout: 20000 });
-  return r.code === 0;
+  return r.code === 0 && parseInt(r.out.trim(), 10) > 0;
 }
 
 async function printerOptions() {

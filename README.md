@@ -20,17 +20,20 @@ Windows y Linux · Desarrollado por <a href="https://safe-tech.cl">SafeTech</a><
 | ![Bienvenida: voz y sonidos](docs/00-bienvenida.png) | ![Tour por la app](docs/20-tour-hojas.png) |
 
 - **Encuentra tus documentos solo**: busca en Escritorio, Documentos, Descargas e Imágenes (también OneDrive) y los ordena por fecha. Puedes filtrar por tipo, escribir el nombre, abrir otro archivo o arrastrarlo a la ventana.
-- **Acepta casi cualquier archivo**: PDF, Word, Excel, PowerPoint (con Microsoft Office o LibreOffice), OpenDocument, imágenes, texto y HTML.
+- **Acepta casi cualquier archivo**: PDF, Word, Excel, PowerPoint, OpenDocument, imágenes, texto y HTML. Los documentos de oficina se convierten solos con Microsoft Office (Windows), ONLYOFFICE, LibreOffice o ArtCraft (WordCraft, GridCraft, DeckCraft). Si ninguno puede, o la conversión no se parece al original, la **exportación asistida** abre el documento en tu programa (WPS, SoftMaker, Calligra u otro), y cuando lo exportas a PDF la app lo recoge sola.
 - **Vista previa antes de gastar papel**: páginas con miniaturas y una vista **Hojas** que simula cada hoja; pasas el mouse por encima y la hoja se da vuelta para mostrar su reverso.
 - **Animación hecha a tu impresora**: la app pregunta una vez cómo salen las hojas (si se ve lo impreso y hacia dónde apunta la flecha). Con eso, la animación de 3 pasos muestra el movimiento exacto: solo trasladar el mazo, girarlo sobre la mesa, o darlo vuelta como la página de un libro o como la hoja de un calendario. Incluye una vista de lado de la bandeja, y puedes avanzar, retroceder o repetir cada paso.
-- **Calibración visual**: con 2 hojas de prueba aprende cómo tu impresora entrega y recibe el papel (orden de los reversos, giro de 180° y lado de impresión). Se hace una vez por impresora.
+- **Calibración visual**: primero preguntas por dónde entra el papel (bandeja abajo o alimentador atrás). Con 2 hojas de prueba aprende cómo tu impresora entrega y recibe el papel: orden de los reversos, giro de 180°, lado de impresión y cómo se apilan las hojas. Se hace una vez por impresora.
+- **Mazo ordenado al terminar**: si tu impresora deja las hojas boca arriba, la app imprime primero las caras de atrás, así el mazo termina con la página 1 arriba.
 - **Un paso a la vez**: cada pantalla dice si te toca actuar (rojo), si hay que esperar (ámbar) o si está listo (verde). Incluye animaciones de qué hacer con el papel y barras de progreso con tiempo estimado. El tiempo se ajusta solo según la velocidad real de tu impresora.
 - **Lotes según la bandeja**: si el trabajo necesita más hojas de las que caben, lo divide y te avisa cuándo poner papel nuevo.
 - **Páginas impares sin descuadres**: agrega una cara en blanco al final de cada copia cuando hace falta.
 - **Ajustes propios de impresora**:
   - En Windows, abre la ventana del driver (calidad, tipo de papel…) y guarda esos ajustes **solo para esta app**.
   - En Linux, muestra las opciones CUPS de la impresora.
-- **Si se atasca el papel**: puedes repetir los frentes del lote.
+- **Si se atasca el papel o toma 2 hojas juntas**: puedes repetir la primera pasada del lote. Con el botón «Tomó 2 hojas juntas» la app quita de la cola lo que falta, te da consejos para que no vuelva a pasar y te deja repetir el lote.
+- **Opciones de impresora en español** (Linux): las opciones del driver traducidas, con las recomendadas para doble cara manual.
+- **Reportar un problema o sugerencia** desde el pie de la ventana, con un correo que ya trae los datos de la app y de la impresora.
 - **Se actualiza sola, si tú quieres**: al abrir revisa si hay una versión nueva en GitHub y te avisa. La descarga solo empieza si aprietas **Actualizar** y la instalación con **Reiniciar y actualizar**. Nunca interrumpe una impresión. También puedes buscar a mano desde «Buscar actualizaciones», en el pie de la ventana. Funciona con el instalador de Windows y con el AppImage de Linux.
 
 | Dar vuelta el mazo | Calibración |
@@ -61,7 +64,7 @@ En la **terminal**:
 curl -fsSL https://raw.githubusercontent.com/psgonzalogr/duplex-assistant/main/install.sh | bash
 ```
 
-Lo instala en `~/.local/opt/duplex-assistant` y crea la entrada en el menú de aplicaciones y el comando `duplex-assistant`. Necesita **CUPS** con tu impresora configurada. Para documentos de Office necesita **LibreOffice** (`sudo pacman -S libreoffice-fresh`).
+Lo instala en `~/.local/opt/duplex-assistant` y crea la entrada en el menú de aplicaciones y el comando `duplex-assistant`. Necesita **CUPS** con tu impresora configurada. Para que Word, Excel y PowerPoint se conviertan solos conviene tener **ONLYOFFICE** o **LibreOffice** (por ejemplo `sudo pacman -S libreoffice-fresh`). Sin ellos, igual puedes imprimirlos con la exportación asistida.
 
 Para desinstalar:
 

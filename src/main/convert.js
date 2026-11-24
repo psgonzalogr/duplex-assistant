@@ -240,7 +240,7 @@ const ODF = new Set(['.odt', '.ott', '.ods', '.ots', '.odp', '.otp']);
 async function officeToPdf(kind, file, outPdf) {
   const errors = [];
   if (process.platform === 'win32') {
-    try { await msOfficeToPdf(kind, file, outPdf); return 'Microsoft Office'; } catch (e) { errors.push(e); }
+    try { await msOfficeToPdf(kind, file, outPdf); return 'Microsoft Office'; } catch (e) { errors.push(e); await fs.rm(outPdf, { force: true }).catch(() => {}); }
   }
   const lo = findLibreOffice();
   const oo = findOnlyOffice();
@@ -251,7 +251,7 @@ async function officeToPdf(kind, file, outPdf) {
   // ArtCraft al final: abre su ventana unos segundos mientras convierte
   for (const c of craft.craftsFor(kind)) tries.push([c.name, () => craft.craftToPdf(c.app, c.bin, file, outPdf)]);
   for (const [name, fn] of tries) {
-    try { await fn(); return name; } catch (e) { errors.push(e); }
+    try { await fn(); return name; } catch (e) { errors.push(e); await fs.rm(outPdf, { force: true }).catch(() => {}); }
   }
   const noFonts = errors.find((e) => e.code === 'OO_NO_FONTS');
   const err = new Error(
@@ -283,17 +283,46 @@ async function toPdf(file, { pageSize = 'letter' } = {}) {
   }
   const dir = getCacheDir();
   await fs.mkdir(dir, { recursive: true });
-  const out = path.join(dir, `${await cacheKey(file, pageSize)}.pdf`);
-  if (fss.existsSync(out)) return { pdfPath: out, kind, via: 'caché' };
+  const key = await cacheKey(file, pageSize);
+  const out = path.join(dir, `${key}.pdf`);
+  if (await isUsablePdf(out)) return { pdfPath: out, kind, via: 'caché' };
+  await fs.rm(out, { force: true }); // restos de una conversión fallida de versiones anteriores
 
+  // Se convierte a un archivo aparte y solo pasa a la caché si terminó bien: una conversión fallida
+  // no puede dejar un PDF roto que después se use como si estuviera listo.
+  const tmp = path.join(dir, `${key}.${process.pid}-${Date.now()}.tmp.pdf`);
   let via = 'Duplex Assistant';
-  if (kind === 'image') await imageToPdf(file, out, pageSize);
-  else if (kind === 'text') await textToPdf(file, out, pageSize);
-  else if (kind === 'web') await htmlFileToPdf(file, out, pageSize);
-  else if (kind === 'excel' && path.extname(file).toLowerCase() === '.csv') {
-    try { via = await officeToPdf(kind, file, out); } catch { await textToPdf(file, out, pageSize); }
-  } else via = await officeToPdf(kind, file, out);
+  try {
+    if (kind === 'image') await imageToPdf(file, tmp, pageSize);
+    else if (kind === 'text') await textToPdf(file, tmp, pageSize);
+    else if (kind === 'web') await htmlFileToPdf(file, tmp, pageSize);
+    else if (kind === 'excel' && path.extname(file).toLowerCase() === '.csv') {
+      try { via = await officeToPdf(kind, file, tmp); } catch { await fs.rm(tmp, { force: true }); await textToPdf(file, tmp, pageSize); }
+    } else via = await officeToPdf(kind, file, tmp);
+    if (!(await isUsablePdf(tmp))) throw new Error('La conversión no produjo un PDF válido.');
+    await fs.rename(tmp, out);
+  } finally {
+    await fs.rm(tmp, { force: true }).catch(() => {});
+    await fs.rm(tmp.replace(/\.pdf$/, '.html'), { force: true }).catch(() => {});
+  }
   return { pdfPath: out, kind, via };
+}
+
+/** Un PDF completo: existe, tiene tamaño razonable y termina con la marca de fin de archivo. */
+async function isUsablePdf(p) {
+  let fh;
+  try {
+    const st = await fs.stat(p);
+    if (st.size < 100) return false;
+    fh = await fs.open(p, 'r');
+    const n = Math.min(2048, st.size);
+    const { buffer } = await fh.read(Buffer.alloc(n), 0, n, st.size - n);
+    return buffer.toString('latin1').includes('%%EOF');
+  } catch {
+    return false;
+  } finally {
+    await fh?.close();
+  }
 }
 
 module.exports = { toPdf, kindOf, KINDS, findLibreOffice, findOnlyOffice, officeToPdf };

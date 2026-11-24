@@ -1,7 +1,7 @@
 {
   "name": "duplex-assistant",
   "productName": "Duplex Assistant",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "Imprime a doble cara en impresoras sin dúplex automático. Desarrollado por SafeTech.",
   "author": {
     "name": "SafeTech",
@@ -14,7 +14,7 @@
     "dev": "vite build && electron .",
     "build:renderer": "vite build",
     "vendor": "node scripts/vendor.mjs",
-    "test": "node --test test/compose.test.js",
+    "test": "node --test test/compose.test.js test/officeapps.test.js",
     "selftest": "vite build && node scripts/selftest.mjs",
     "dist:win": "npm run vendor && vite build && electron-builder --win --publish never",
     "dist:linux": "npm run vendor && vite build && electron-builder --linux --publish never"
