@@ -2,6 +2,7 @@
 import { h, icon, clear, badge, plural, relTime, duration, folderName, toast } from '../ui.js';
 import { openPdf, renderPage } from '../preview.js';
 import { paper } from '../scenes.js';
+import { assistPanel } from '../assist.js';
 
 const FILTERS = [
   ['all', 'Todos'], ['pdf', 'PDF'], ['word', 'Word'], ['excel', 'Excel'], ['powerpoint', 'PowerPoint'], ['image', 'Imágenes'], ['text', 'Texto'],
@@ -24,6 +25,8 @@ export function parseRange(spec, total) {
   }
   return out.length ? out : null;
 }
+
+const OFFICE_KINDS = new Set(['word', 'excel', 'powerpoint']);
 
 export function mountHome(root, app) {
   const { S, api } = app;
@@ -127,6 +130,7 @@ export function mountHome(root, app) {
   }
 
   let renderToken = 0;
+  let assistCache = null; // { path, mode, el }
   async function renderPreview() {
     const token = ++renderToken;
     previewBar.style.visibility = S.selected ? 'visible' : 'hidden';
@@ -141,16 +145,37 @@ export function mountHome(root, app) {
         h('p', S.selected.kind === 'pdf' ? 'Abriendo el documento…' : `Convirtiendo «${S.selected.name}»… puede tardar unos segundos.`))));
       return;
     }
+    const office = OFFICE_KINDS.has(S.selected.kind);
+    const assistDone = (res) => { S.prepared = res; S.prepError = null; S.assistOpen = false; assistCache = null; renderPreview(); renderSummary(); };
+    // El panel se reutiliza mientras sea el mismo archivo: si la pantalla se redibuja, no se pierde la espera
+    const assist = (opts) => {
+      if (assistCache?.path !== S.selected.path || assistCache.mode !== opts.mode) assistCache = { path: S.selected.path, mode: opts.mode, el: assistPanel(app, S.selected, opts) };
+      return assistCache.el;
+    };
     if (S.prepError) {
       previewSub.textContent = folderName(S.selected.dir);
       clear(previewBody, h('div.empty', h('div.empty-inner',
         h('div.note.warn', icon('alert'), h('div', h('strong', 'No puedo abrir este archivo'), h('p', S.prepError))),
-        h('button.btn', { onclick: () => select(S.selected, true) }, icon('refresh'), 'Intentar de nuevo'))));
+        // Word, Excel o PowerPoint: se puede abrir en el programa de oficina que tenga la persona y exportar a PDF
+        office ? assist({ mode: 'error', onDone: assistDone }) : null,
+        h('button.btn', { class: office ? 'ghost sm' : '', onclick: () => select(S.selected, true) }, icon('refresh'), 'Intentar de nuevo'))));
+      return;
+    }
+    if (S.assistOpen && office) {
+      clear(previewBody, h('div.empty', h('div.empty-inner',
+        assist({
+          mode: 'other',
+          title: 'Ábrelo en otro programa y expórtalo a PDF',
+          onDone: assistDone,
+          onCancel: () => { S.assistOpen = false; assistCache = null; renderPreview(); },
+        }))));
       return;
     }
     const prep = S.prepared;
     if (!prep) return;
     previewSub.textContent = `${plural(prep.pages, 'página', 'páginas')} · ${folderName(S.selected.dir)}${prep.via !== 'original' && prep.via !== 'caché' ? ` · convertido con ${prep.via}` : ''}`;
+    // Si la conversión no se parece al original, se puede exportar desde otro programa
+    if (office) previewSub.append(' · ', h('button.linkish', { onclick: () => { S.assistOpen = true; renderPreview(); } }, '¿No se parece al original? Usar otro programa'));
     let doc;
     try { doc = await openPdf(prep.pdfPath); } catch (e) { S.prepError = e.message; return renderPreview(); }
     if (token !== renderToken) return;
@@ -331,6 +356,7 @@ export function mountHome(root, app) {
     S.selected = f;
     S.prepared = null;
     S.prepError = null;
+    S.assistOpen = false;
     S.preparing = true;
     S.pageIdx = 0;
     renderList();

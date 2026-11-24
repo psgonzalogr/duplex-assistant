@@ -8,6 +8,7 @@ const { pathToFileURL } = require('node:url');
 const store = require('./store');
 const compose = require('./compose');
 const convert = require('./convert');
+const officeApps = require('./officeapps');
 const scanner = require('./scanner');
 const updater = require('./updater');
 const printing = process.platform === 'win32' ? require('./printing/windows') : require('./printing/linux');
@@ -141,6 +142,43 @@ function registerIpc() {
     allowedPdfs.add(res.pdfPath);
     const pages = await compose.pageCount(res.pdfPath);
     return { ...res, pages };
+  });
+  // Exportación asistida: abrir en otro programa y recoger el PDF que la persona exporte
+  const lastSize = new Map();
+  const asPrepared = async (pdfPath, via) => {
+    allowedPdfs.add(pdfPath);
+    return { pdfPath, kind: 'pdf', via, pages: await compose.pageCount(pdfPath) };
+  };
+  handle('office:apps', (file) => {
+    if (!fs.existsSync(file)) return [];
+    return officeApps.appsFor(convert.kindOf(file)).map(({ id, name, hint }) => ({ id, name, hint }));
+  });
+  handle('office:open', async (id, file) => {
+    if (!fs.existsSync(file)) throw new Error('El archivo ya no existe en esa carpeta.');
+    const app = officeApps.appsFor(convert.kindOf(file)).find((a) => a.id === id);
+    if (!app) throw new Error('Ese programa ya no está disponible.');
+    lastSize.delete(file);
+    await officeApps.openIn(app, file);
+    return true;
+  });
+  handle('office:find-pdf', async (file, since, via) => {
+    const f = officeApps.findExported(file, Number(since) || 0);
+    if (!f) return null;
+    // Se acepta cuando el tamaño no cambió desde la revisión anterior (el programa terminó de escribirlo)
+    const prev = lastSize.get(file);
+    lastSize.set(file, `${f.path}|${f.size}`);
+    if (prev !== `${f.path}|${f.size}`) return null;
+    try { return await asPrepared(f.path, via || 'exportado a mano'); } catch { return null; }
+  });
+  handle('office:pick-pdf', async (file) => {
+    const r = await dialog.showOpenDialog(win, {
+      title: 'Elige el PDF que exportaste',
+      defaultPath: path.dirname(file),
+      properties: ['openFile'],
+      filters: [{ name: 'PDF', extensions: ['pdf'] }],
+    });
+    if (r.canceled || !r.filePaths[0]) return null;
+    return asPrepared(r.filePaths[0], 'exportado a mano');
   });
   handle('file:read-pdf', async (pdfPath) => {
     if (!allowedPdfs.has(pdfPath)) throw new Error('Archivo no autorizado.');

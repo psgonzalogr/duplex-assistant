@@ -1,7 +1,7 @@
 {
   "name": "duplex-assistant",
   "productName": "Duplex Assistant",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Imprime a doble cara en impresoras sin dúplex automático. Desarrollado por SafeTech.",
   "author": {
     "name": "SafeTech",

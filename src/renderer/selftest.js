@@ -245,6 +245,38 @@ export async function selftest(app, samplePath) {
     document.querySelector('.flow-exit').click();
     await wait(600);
 
+    // Word sin conversor automático: abrirlo en otro programa y recoger el PDF exportado
+    {
+      const realApi = app.api;
+      const sample = await real.prepare(samplePath, { pageSize: 'letter' });
+      let polls = 0;
+      app.api = {
+        ...realApi,
+        prepare: async () => { const e = new Error('No encontré un programa que convierta este documento solo. Puedes abrirlo en tu programa de oficina y exportarlo a PDF desde aquí abajo, o instalar ONLYOFFICE o LibreOffice para que se convierta automáticamente.'); e.code = 'NO_OFFICE'; throw e; },
+        officeApps: async () => [
+          { id: 'wps-wps', name: 'WPS Writer', hint: 'En WPS: Menú › Exportar a PDF.' },
+          { id: 'softmaker', name: 'SoftMaker TextMaker', hint: 'En SoftMaker: Archivo › Exportar como PDF.' },
+          { id: 'default', name: 'Programa predeterminado', hint: 'En tu programa, busca «Exportar a PDF».' },
+        ],
+        openInOffice: async () => true,
+        findExportedPdf: async () => (++polls >= 3 ? { ...sample, via: 'WPS Writer' } : null),
+      };
+      app.go('home');
+      await wait(800);
+      app.current.select(FIX[1]);
+      await until(() => document.querySelector('.assist-apps'));
+      await wait(500);
+      await T.capture(`${tag}-28-exportar-asistido`);
+      clickText('Abrir en WPS Writer');
+      await until(() => document.querySelector('.assist-wait'));
+      await wait(400);
+      await T.capture(`${tag}-28b-esperando-pdf`);
+      await until(() => document.querySelector('.page-canvas-wrap canvas'), 15000);
+      await wait(800);
+      await T.capture(`${tag}-28c-pdf-recibido`);
+      app.api = realApi;
+    }
+
     // Salir de la calibración a mitad de camino: vuelve a donde estaba
     app.go('calibrate', { returnTo: 'printer' });
     await until(() => document.querySelector('.feed-choices'));

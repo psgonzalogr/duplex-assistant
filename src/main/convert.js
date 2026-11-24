@@ -8,6 +8,7 @@ const crypto = require('node:crypto');
 const { spawn } = require('node:child_process');
 const { pathToFileURL } = require('node:url');
 const { BrowserWindow } = require('electron');
+const craft = require('./craft');
 
 const KINDS = {
   pdf: ['pdf'],
@@ -119,8 +120,17 @@ function findLibreOffice() {
       ]
     : ['/usr/bin/soffice', '/usr/bin/libreoffice', '/usr/local/bin/soffice', '/opt/libreoffice/program/soffice', '/snap/bin/libreoffice'];
   for (const c of cands) if (fss.existsSync(c)) return { cmd: c, args: [] };
-  if (process.platform === 'linux' && fss.existsSync('/var/lib/flatpak/exports/bin/org.libreoffice.LibreOffice')) {
-    return { cmd: 'flatpak', args: ['run', '--filesystem=host', 'org.libreoffice.LibreOffice'] };
+  if (process.platform === 'linux') {
+    for (const fp of ['/var/lib/flatpak/exports/bin/org.libreoffice.LibreOffice', path.join(os.homedir(), '.local/share/flatpak/exports/bin/org.libreoffice.LibreOffice')]) {
+      if (fss.existsSync(fp)) return { cmd: 'flatpak', args: ['run', '--filesystem=host', 'org.libreoffice.LibreOffice'] };
+    }
+    // AppImage oficial de LibreOffice en ~/Applications
+    for (const dir of [path.join(os.homedir(), 'Applications'), path.join(os.homedir(), 'Aplicaciones')]) {
+      let list = [];
+      try { list = fss.readdirSync(dir); } catch { continue; }
+      const f = list.filter((n) => /^libreoffice.*\.appimage$/i.test(n)).sort().pop();
+      if (f) return { cmd: path.join(dir, f), args: [] };
+    }
   }
   return null;
 }
@@ -238,6 +248,8 @@ async function officeToPdf(kind, file, outPdf) {
   if (oo) tries.push(['ONLYOFFICE', () => onlyOfficeToPdf(oo, file, outPdf)]);
   if (lo) tries.push(['LibreOffice', () => libreOfficeToPdf(lo, file, outPdf)]);
   if (ODF.has(path.extname(file).toLowerCase())) tries.reverse();
+  // ArtCraft al final: abre su ventana unos segundos mientras convierte
+  for (const c of craft.craftsFor(kind)) tries.push([c.name, () => craft.craftToPdf(c.app, c.bin, file, outPdf)]);
   for (const [name, fn] of tries) {
     try { await fn(); return name; } catch (e) { errors.push(e); }
   }
@@ -246,8 +258,8 @@ async function officeToPdf(kind, file, outPdf) {
     tries.length === 1 && noFonts
       ? noFonts.message
       : tries.length || process.platform === 'win32'
-        ? 'No se pudo convertir el documento con los programas de oficina instalados. Ábrelo y guárdalo como PDF, o revisa que no esté protegido con contraseña.'
-        : 'Para imprimir documentos de Word, Excel o PowerPoint necesitas ONLYOFFICE o LibreOffice. Instala uno (por ejemplo: sudo pacman -S libreoffice-fresh, o ONLYOFFICE desde AUR o Flathub) y vuelve a intentarlo.'
+        ? 'No se pudo convertir el documento con los programas de oficina instalados. Puedes abrirlo en uno de ellos y exportarlo a PDF desde aquí abajo, o revisar que no esté protegido con contraseña.'
+        : 'No encontré un programa que convierta este documento solo. Puedes abrirlo en tu programa de oficina y exportarlo a PDF desde aquí abajo, o instalar ONLYOFFICE o LibreOffice para que se convierta automáticamente.'
   );
   err.code = 'NO_OFFICE';
   err.details = errors.map((e) => e.message).join('\n');

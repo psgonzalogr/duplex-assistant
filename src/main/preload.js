@@ -35,6 +35,10 @@ contextBridge.exposeInMainWorld('da', {
   prepare: (file, opts) => invoke('file:prepare', file, opts),
   readPdf: (pdfPath) => invoke('file:read-pdf', pdfPath),
   reveal: (file) => invoke('file:reveal', file),
+  officeApps: (file) => invoke('office:apps', file),
+  openInOffice: (id, file) => invoke('office:open', id, file),
+  findExportedPdf: (file, since, via) => invoke('office:find-pdf', file, since, via),
+  pickExportedPdf: (file) => invoke('office:pick-pdf', file),
 
   planJob: (args) => invoke('job:plan', args),
   print: (args) => invoke('job:print', args),
