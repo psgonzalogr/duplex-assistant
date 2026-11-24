@@ -133,6 +133,67 @@ async function libreOfficeToPdf(lo, file, outPdf) {
   await fs.rename(produced, outPdf);
 }
 
+// ---------- ONLYOFFICE (conversor x2t, sin abrir ventanas) ----------
+
+/**
+ * Busca el conversor de ONLYOFFICE Desktop Editors y su índice de fuentes (AllFonts.js), que la app de
+ * escritorio genera la primera vez que se abre. Devuelve { x2t, fontsDir } o null.
+ */
+function findOnlyOffice() {
+  const home = os.homedir();
+  const cands = process.platform === 'win32'
+    ? [
+        { x2t: path.join(process.env.ProgramFiles || 'C:\\Program Files', 'ONLYOFFICE', 'DesktopEditors', 'converter', 'x2t.exe'),
+          fonts: path.join(process.env.LOCALAPPDATA || path.join(home, 'AppData', 'Local'), 'ONLYOFFICE', 'DesktopEditors', 'data', 'fonts') },
+        { x2t: path.join(process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)', 'ONLYOFFICE', 'DesktopEditors', 'converter', 'x2t.exe'),
+          fonts: path.join(process.env.LOCALAPPDATA || path.join(home, 'AppData', 'Local'), 'ONLYOFFICE', 'DesktopEditors', 'data', 'fonts') },
+      ]
+    : [
+        { x2t: '/opt/onlyoffice/desktopeditors/converter/x2t', fonts: path.join(home, '.local/share/onlyoffice/desktopeditors/data/fonts') },
+        { x2t: '/usr/lib/onlyoffice/desktopeditors/converter/x2t', fonts: path.join(home, '.local/share/onlyoffice/desktopeditors/data/fonts') },
+        { x2t: '/snap/onlyoffice-desktopeditors/current/opt/onlyoffice/desktopeditors/converter/x2t',
+          fonts: path.join(home, 'snap/onlyoffice-desktopeditors/current/.local/share/onlyoffice/desktopeditors/data/fonts') },
+      ];
+  for (const c of cands) {
+    if (!fss.existsSync(c.x2t)) continue;
+    const hasFonts = fss.existsSync(path.join(c.fonts, 'AllFonts.js'));
+    return { x2t: c.x2t, fontsDir: hasFonts ? c.fonts : null };
+  }
+  return null;
+}
+
+const xml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c]);
+
+async function onlyOfficeToPdf(oo, file, outPdf) {
+  if (!oo.fontsDir) {
+    const e = new Error('ONLYOFFICE está instalado pero todavía no ha preparado sus fuentes. Ábrelo una vez y vuelve a intentarlo.');
+    e.code = 'OO_NO_FONTS';
+    throw e;
+  }
+  const work = await fs.mkdtemp(path.join(os.tmpdir(), 'da-oo-'));
+  try {
+    const params = path.join(work, 'params.xml');
+    // 513 = PDF. Las rutas van escapadas: el archivo puede tener &, < o comillas en el nombre.
+    await fs.writeFile(params, `<?xml version="1.0" encoding="utf-8"?>
+<TaskQueueDataConvert xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <m_sFileFrom>${xml(file)}</m_sFileFrom>
+  <m_sFileTo>${xml(outPdf)}</m_sFileTo>
+  <m_nFormatTo>513</m_nFormatTo>
+  <m_sAllFontsPath>${xml(path.join(oo.fontsDir, 'AllFonts.js'))}</m_sAllFontsPath>
+  <m_sFontDir>${xml(oo.fontsDir)}</m_sFontDir>
+  <m_bIsNoBase64>true</m_bIsNoBase64>
+  <m_sTempDir>${xml(path.join(work, 'tmp'))}</m_sTempDir>
+</TaskQueueDataConvert>
+`, 'utf8');
+    await fs.mkdir(path.join(work, 'tmp'), { recursive: true });
+    await run(oo.x2t, [params]);
+    const st = await fs.stat(outPdf).catch(() => null);
+    if (!st || st.size < 100) throw new Error('ONLYOFFICE no generó el PDF.');
+  } finally {
+    await fs.rm(work, { recursive: true, force: true }).catch(() => {});
+  }
+}
+
 const MSO_SCRIPT = String.raw`
 $ErrorActionPreference = 'Stop'
 $in = $env:DA_IN; $out = $env:DA_OUT
@@ -158,19 +219,35 @@ async function msOfficeToPdf(kind, file, outPdf) {
   if (!fss.existsSync(outPdf)) throw new Error('Office no generó el PDF.');
 }
 
+// Formatos propios de LibreOffice (OpenDocument): ahí LibreOffice va primero.
+const ODF = new Set(['.odt', '.ott', '.ods', '.ots', '.odp', '.otp']);
+
+/**
+ * Convierte con el primer programa de oficina que funcione. Orden:
+ * Windows: Microsoft Office → ONLYOFFICE → LibreOffice. Linux: ONLYOFFICE → LibreOffice.
+ * ONLYOFFICE respeta mejor el diseño de Word/Excel/PowerPoint; con OpenDocument, LibreOffice va antes.
+ */
 async function officeToPdf(kind, file, outPdf) {
   const errors = [];
   if (process.platform === 'win32') {
     try { await msOfficeToPdf(kind, file, outPdf); return 'Microsoft Office'; } catch (e) { errors.push(e); }
   }
   const lo = findLibreOffice();
-  if (lo) {
-    try { await libreOfficeToPdf(lo, file, outPdf); return 'LibreOffice'; } catch (e) { errors.push(e); }
+  const oo = findOnlyOffice();
+  const tries = [];
+  if (oo) tries.push(['ONLYOFFICE', () => onlyOfficeToPdf(oo, file, outPdf)]);
+  if (lo) tries.push(['LibreOffice', () => libreOfficeToPdf(lo, file, outPdf)]);
+  if (ODF.has(path.extname(file).toLowerCase())) tries.reverse();
+  for (const [name, fn] of tries) {
+    try { await fn(); return name; } catch (e) { errors.push(e); }
   }
+  const noFonts = errors.find((e) => e.code === 'OO_NO_FONTS');
   const err = new Error(
-    lo || process.platform === 'win32'
-      ? 'No se pudo abrir el documento con Office ni con LibreOffice. Ábrelo y guárdalo como PDF, o revisa que no esté protegido con contraseña.'
-      : 'Para imprimir documentos de Word, Excel o PowerPoint necesitas LibreOffice. Instálalo (por ejemplo: sudo pacman -S libreoffice-fresh) y vuelve a intentarlo.'
+    tries.length === 1 && noFonts
+      ? noFonts.message
+      : tries.length || process.platform === 'win32'
+        ? 'No se pudo convertir el documento con los programas de oficina instalados. Ábrelo y guárdalo como PDF, o revisa que no esté protegido con contraseña.'
+        : 'Para imprimir documentos de Word, Excel o PowerPoint necesitas ONLYOFFICE o LibreOffice. Instala uno (por ejemplo: sudo pacman -S libreoffice-fresh, o ONLYOFFICE desde AUR o Flathub) y vuelve a intentarlo.'
   );
   err.code = 'NO_OFFICE';
   err.details = errors.map((e) => e.message).join('\n');
@@ -207,4 +284,4 @@ async function toPdf(file, { pageSize = 'letter' } = {}) {
   return { pdfPath: out, kind, via };
 }
 
-module.exports = { toPdf, kindOf, KINDS, findLibreOffice };
+module.exports = { toPdf, kindOf, KINDS, findLibreOffice, findOnlyOffice, officeToPdf };

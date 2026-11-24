@@ -79,6 +79,7 @@ function registerIpc() {
     platform: process.platform,
     lastPrinter: store.get('lastPrinter', null),
     libreOffice: !!convert.findLibreOffice(),
+    onlyOffice: !!convert.findOnlyOffice(),
   }));
   handle('app:open-external', (url) => {
     if (/^https:\/\/([a-z0-9-]+\.)*(safe-tech\.cl|github\.com)\//i.test(url)) shell.openExternal(url);
