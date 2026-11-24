@@ -1,6 +1,7 @@
 node_modules/
 dist/
 release/
+release-test/
 selftest-out/
 selftest-pack/
 vendor/win/*.exe
