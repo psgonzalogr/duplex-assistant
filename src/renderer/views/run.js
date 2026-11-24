@@ -1,7 +1,8 @@
 // Asistente de impresión: papel → frentes → dar vuelta → reversos (por lote) → listo.
 import { h, icon, plural, toast } from '../ui.js';
 import { Flow, printPhase } from '../flow.js';
-import { scene } from '../scenes.js';
+import { scene, paperGuide } from '../scenes.js';
+import { askOutputFace } from './calibrate.js';
 
 export async function runPrint(root, app, job) {
   const { api } = app;
@@ -78,11 +79,12 @@ export async function runPrint(root, app, job) {
       if (!b.backs) break;
       // 3. Dar vuelta
       flow.mark(`flip${b.index}`);
+      if (!profile.outputFace) profile = await askOutputFace(flow, api, printer);
       ctl = flow.stage({
         chip: 'act',
         title: `Toma las ${b.sheets} hojas y ponlas de nuevo en la bandeja`,
-        lead: `Sin cambiar el orden: deja la <b>cara impresa hacia ${profile.faceUp ? 'arriba' : 'abajo'}</b> y el <b>borde de arriba del texto hacia adentro</b> de la impresora, igual que en la animación.`,
-        scene: scene('flip', { faceUp: profile.faceUp }),
+        lead: 'Sigue los 3 pasos de la animación, sin cambiar el orden de las hojas.',
+        scene: paperGuide(profile, { sheets: b.sheets }),
         actions: [
           { key: 'go', label: 'Ya las puse · imprimir reversos', primary: true, icon: 'printer' },
           { key: 'redo', label: 'Se atascó: repetir los frentes', icon: 'refresh', ghost: true },

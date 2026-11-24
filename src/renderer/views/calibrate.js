@@ -1,7 +1,20 @@
 // Calibración: 2 hojas de prueba y una pregunta visual. Guarda el perfil de la impresora.
 import { h, icon, toast } from '../ui.js';
 import { Flow, printPhase } from '../flow.js';
-import { scene, mini } from '../scenes.js';
+import { scene, mini, paperGuide, outputChoices } from '../scenes.js';
+
+/** Pregunta cómo salen las hojas de la impresora y lo guarda en el perfil. */
+export async function askOutputFace(flow, api, printer) {
+  let picked;
+  const ctl = flow.stage({
+    chip: 'act',
+    title: 'Mira las hojas que salieron, sin moverlas',
+    lead: 'Fíjate en la hoja de arriba, tal como quedó en la salida. <b>¿Qué ves?</b> Con esto la animación te mostrará el movimiento exacto.',
+    body: outputChoices((k) => { picked = k; ctl.resolve(k); }),
+  });
+  await ctl.wait();
+  return api.updatePrinter(printer, { outputFace: picked });
+}
 
 export const ANSWERS = [
   { key: 'ok', title: 'Dice HOJA 1 · REVERSO', text: 'y las dos flechas apuntan al mismo borde del papel.', minis: [[1], [1]] },
@@ -48,6 +61,7 @@ export async function runCalibration(root, app) {
   if ((await ctl.wait()) === 'cancel') return app.go(app.S.returnTo || 'home');
 
   const cal = await api.calibration();
+  let askedOut = false;
   for (;;) {
     flow.mark('paper');
     ctl = flow.stage({
@@ -69,11 +83,12 @@ export async function runCalibration(root, app) {
     }
 
     flow.mark('flip');
+    if (!askedOut) { profile = await askOutputFace(flow, api, printer); askedOut = true; }
     ctl = flow.stage({
       chip: 'act',
       title: 'Toma las 2 hojas y vuelve a ponerlas en la bandeja',
-      lead: `Sin cambiar su orden, con la <b>cara impresa hacia ${profile.faceUp ? 'arriba' : 'abajo'}</b> y la <b>flecha apuntando hacia adentro</b> de la impresora, como en la animación.`,
-      scene: scene('flip', { faceUp: profile.faceUp }),
+      lead: 'Sigue los 3 pasos de la animación. Puedes repetirla o avanzar a tu ritmo.',
+      scene: paperGuide(profile, { sheets: 2 }),
       actions: [{ key: 'go', label: 'Ya las puse · imprimir reversos', primary: true, icon: 'printer' }],
     });
     await ctl.wait();
@@ -104,7 +119,7 @@ export async function runCalibration(root, app) {
         chipText: 'OTRA VEZ',
         title: 'Entendido: tu impresora imprime por el otro lado',
         lead: `Repitamos la prueba con 2 hojas nuevas. Esta vez pondrás el mazo con la <b>cara impresa hacia ${profile.faceUp ? 'arriba' : 'abajo'}</b>.`,
-        scene: scene('flip', { faceUp: profile.faceUp }),
+        scene: paperGuide(profile, { sheets: 2 }),
         actions: [{ key: 'go', label: 'Repetir la prueba', primary: true, icon: 'refresh' }],
       });
       await again.wait();

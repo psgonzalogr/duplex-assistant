@@ -9,6 +9,7 @@ const DEFAULT_PRINTER = {
   invert: true,
   rotate: false,
   faceUp: true,       // poner el mazo con la cara impresa hacia arriba
+  outputFace: null,   // cómo salen las hojas: 'up-in' | 'up-out' | 'down' | null (no se sabe)
   capacity: 100,      // hojas por pasada (bandeja)
   secPerSheet: 9,     // se aprende con cada impresión
   paper: 'auto',

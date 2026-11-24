@@ -1,5 +1,13 @@
 // Ajustes de la impresora: calibración, papel, color, bandeja y opciones del driver.
 import { h, icon, clear, toast } from '../ui.js';
+import { paperGuide } from '../scenes.js';
+
+const OUTPUTS = [
+  ['', 'No lo sé todavía (se pregunta al imprimir)'],
+  ['up-in', 'Se ve lo impreso y la flecha apunta hacia la impresora'],
+  ['up-out', 'Se ve lo impreso y la flecha apunta hacia mí'],
+  ['down', 'Se ve el lado en blanco'],
+];
 
 const PAPERS = [['auto', 'Según el documento'], ['letter', 'Carta'], ['legal', 'Oficio (Legal)'], ['A4', 'A4'], ['A5', 'A5']];
 const COLORS = [['auto', 'Lo que diga la impresora'], ['color', 'Color'], ['monochrome', 'Blanco y negro']];
@@ -75,7 +83,33 @@ export function mountPrinter(root, app) {
       loadCups(driverCard, prof);
     }
 
-    clear(body, head, cal, tray, driverCard);
+    const guideSlot = h('div');
+    const drawGuide = () => clear(guideSlot, paperGuide(S.profile));
+    const outSel = h('select.field', {
+      'aria-label': 'Cómo salen las hojas',
+      onchange: async () => {
+        S.profile = await api.updatePrinter(S.printer, { outputFace: outSel.value || null });
+        drawGuide();
+        toast('Guardado. La animación ya muestra el movimiento para tu impresora.');
+      },
+    }, OUTPUTS.map(([v, l]) => h('option', { value: v, selected: (prof.outputFace || '') === v }, l)));
+    const faceSel = h('select.field', {
+      'aria-label': 'Cómo va el mazo en la bandeja',
+      onchange: async () => {
+        S.profile = await api.updatePrinter(S.printer, { faceUp: faceSel.value === 'up' });
+        drawGuide();
+        toast('Guardado.');
+      },
+    }, h('option', { value: 'up', selected: prof.faceUp }, 'Con lo impreso hacia arriba'), h('option', { value: 'down', selected: !prof.faceUp }, 'Con lo impreso hacia abajo'));
+    const guideCard = h('div.card.span',
+      h('h3', h('span.ib', icon('flip')), 'Cómo poner el papel para los reversos'),
+      h('div.row2',
+        h('div', h('label.label', 'Cuando salen las hojas…'), outSel),
+        h('div', h('label.label', 'En la bandeja van…'), faceSel, h('p.hint', 'Lo averigua la calibración; cámbialo solo si sabes que es distinto.'))),
+      guideSlot);
+    drawGuide();
+
+    clear(body, head, cal, tray, guideCard, driverCard);
   }
 
   async function openDriver() {

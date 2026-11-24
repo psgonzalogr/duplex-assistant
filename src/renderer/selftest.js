@@ -31,7 +31,7 @@ export async function selftest(app, samplePath) {
     print: async () => { await wait(300); return { ref: 'test' }; },
     queue: async () => [{ name: '', printed: 0, total: 0, status: '' }],
     learnSpeed: async () => null,
-    printerProfile: async (n) => (fakeProfile ||= { ...(await real.printerProfile(n)), calibrated: true, secPerSheet: 9 }),
+    printerProfile: async (n) => (fakeProfile ||= { ...(await real.printerProfile(n)), calibrated: true, secPerSheet: 9, faceUp: true, outputFace: 'up-out' }),
     updatePrinter: async (_n, patch) => (fakeProfile = { ...fakeProfile, ...patch }),
   };
   // Documentos de ejemplo: las capturas son públicas y no deben mostrar archivos reales del equipo.
@@ -99,6 +99,9 @@ export async function selftest(app, samplePath) {
     app.go('printer');
     await wait(1200);
     await T.capture(`${tag}-04-impresora`);
+    document.querySelector('.guide')?.scrollIntoView({ block: 'center' });
+    await wait(2600);
+    await T.capture(`${tag}-17-impresora-guia`);
 
     // Flujo de impresión
     app.go('run', { job: { file: app.S.selected, pdfPath: app.S.prepared.pdfPath, copies: 10, range: '' } });
@@ -112,7 +115,17 @@ export async function selftest(app, samplePath) {
     clickText('Ya salieron todas');
     await until(() => document.querySelector('.stage h1')?.textContent.includes('Toma las'));
     await wait(2600);
+    document.querySelector('.guide').goTo(0);
+    await wait(1200);
     await T.capture(`${tag}-07-dar-vuelta`);
+    document.querySelector('.guide').goTo(1);
+    await wait(1000);
+    await T.capture(`${tag}-07b-girar`);
+    await wait(1200);
+    await T.capture(`${tag}-07c-girado`);
+    document.querySelector('.guide').goTo(2);
+    await wait(1400);
+    await T.capture(`${tag}-07d-bandeja`);
     clickText('Ya las puse');
     await until(() => document.querySelector('.stage h1')?.textContent.includes('reversos'));
     await wait(800);
@@ -131,7 +144,13 @@ export async function selftest(app, samplePath) {
     clickText('Imprimir frentes');
     await until(() => [...document.querySelectorAll('button')].some((b) => b.textContent.includes('Ya salieron todas')));
     clickText('Ya salieron todas');
+    await until(() => document.querySelector('.out-choices'));
+    await wait(600);
+    await T.capture(`${tag}-16-salida`);
+    document.querySelectorAll('.out-choices .choice')[2].click();
     await until(() => document.querySelector('.stage h1')?.textContent.includes('Toma las 2'));
+    await wait(2000);
+    await T.capture(`${tag}-18-calibrar-guia-blanco`);
     clickText('Ya las puse');
     await until(() => [...document.querySelectorAll('button')].some((b) => b.textContent.includes('Ya salieron todas')));
     clickText('Ya salieron todas');
