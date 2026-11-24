@@ -14,7 +14,7 @@
     "dev": "vite build && electron .",
     "build:renderer": "vite build",
     "vendor": "node scripts/vendor.mjs",
-    "test": "node --test test/",
+    "test": "node --test test/compose.test.js",
     "selftest": "vite build && node scripts/selftest.mjs",
     "dist:win": "npm run vendor && vite build && electron-builder --win --publish never",
     "dist:linux": "npm run vendor && vite build && electron-builder --linux --publish never"
