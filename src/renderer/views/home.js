@@ -307,7 +307,7 @@ export function mountHome(root, app) {
       h('div.ticket-row', 'Tiempo estimado', h('b', `~${duration(sec)}`)),
       pages.length % 2 ? h('div.ticket-row', 'Reverso en blanco', h('b', 'la última hoja de cada copia')) : null));
 
-    const needsCal = !prof?.calibrated;
+    const needsCal = !prof?.calibrated && !prof?.riskAccepted;
     clear(panelFoot,
       h('div.foot-summary',
         h('span', h('b', plural(sheets, 'hoja', 'hojas'))),
@@ -317,7 +317,8 @@ export function mountHome(root, app) {
       needsCal
         ? h('button.btn.primary.big.block', { onclick: () => app.go('calibrate', { returnTo: 'home' }) }, icon('sparkles'), 'Calibrar impresora')
         : h('button.btn.primary.big.block', { onclick: startPrint }, icon('printer'), 'Imprimir a doble cara'),
-      needsCal ? h('button.btn.ghost.block', { onclick: startPrint }, 'Imprimir sin calibrar') : null);
+      needsCal ? h('button.btn.ghost.block', { onclick: () => app.go('calibrate', { returnTo: 'home', skipFirst: true }) }, 'Imprimir sin calibrar…') : null,
+      !needsCal && !prof?.calibrated ? h('p.hint', { style: { textAlign: 'center', margin: 0, color: 'var(--ambar-claro)' } }, 'Sin calibrar: aceptaste el riesgo de perder hojas.') : null);
   }
 
   function startPrint() {

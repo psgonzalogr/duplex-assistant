@@ -1,0 +1,45 @@
+{
+  "_info": "Guion de la guía por voz. Voz Zabra (ElevenLabs 9XaoraKgpXhItOQktYsV, eleven_v4). Cada id genera src/renderer/voz/<id>.mp3. Sin números variables: la cantidad de hojas se lee en pantalla.",
+  "frases": {
+    "bienvenida": "¡Hola! Te doy la bienvenida a Duplex Assistant, de SafeTech. Te voy a ayudar a imprimir por los dos lados de la hoja, aunque tu impresora no lo haga sola. Antes de empezar, elige si quieres que te acompañe con mi voz y con sonidos. Puedes cambiarlo cuando quieras con los botones de arriba.",
+    "voz-activada": "¡Perfecto! Te voy a ir guiando con mi voz en cada paso.",
+
+    "tour-inicio": "Te muestro la aplicación en un minuto. Avanza con el botón Siguiente, o sal del recorrido cuando quieras.",
+    "tour-documentos": "A la izquierda están tus documentos. La aplicación los busca sola en tu Escritorio, Documentos y Descargas, y los ordena del más reciente al más antiguo.",
+    "tour-buscar": "Si no ves el que necesitas, escribe parte del nombre aquí, o filtra por tipo: PDF, Word, Excel, PowerPoint o imágenes. También puedes arrastrar cualquier archivo a la ventana.",
+    "tour-vista": "Cuando eliges un documento, aquí ves cada página antes de imprimir. Así no gastas papel a ciegas.",
+    "tour-hojas": "Con el botón Hojas ves cómo va a quedar cada hoja por delante y por detrás. Pasa el mouse sobre una hoja para darla vuelta.",
+    "tour-copias": "Aquí eliges cuántas copias quieres y, si lo necesitas, solo algunas páginas.",
+    "tour-resumen": "Este resumen te dice cuántas hojas vas a usar y cuánto tiempo va a tomar, más o menos.",
+    "tour-imprimir": "Cuando todo esté listo, aprieta Imprimir a doble cara. Yo te voy a decir cuándo esperar y cuándo dar vuelta el mazo.",
+    "tour-impresora": "En Impresora puedes volver a calibrar, ver cómo poner el papel y cambiar la calidad o el tamaño de la hoja.",
+    "tour-botones": "Con estos botones activas o silencias mi voz y los sonidos. Y con el signo de pregunta repites este recorrido cuando quieras.",
+    "tour-fin": "¡Eso es todo! Ahora vamos a calibrar tu impresora, para que los reversos salgan siempre en su lugar.",
+
+    "cal-intro": "Cada impresora entrega el papel de una forma distinta. Con dos hojas de prueba voy a aprender cómo funciona la tuya. Se hace una sola vez y toma más o menos un minuto.",
+    "cal-riesgo": "Si te saltas la calibración, los reversos podrían salir en otro orden o de cabeza, y perderías hojas. Te recomiendo calibrar. Si igual quieres saltarla, marca la casilla para aceptar el riesgo.",
+    "cal-papel": "Pon dos hojas en blanco en la bandeja, del tamaño que usas siempre. Cuando estén listas, aprieta Imprimir frentes.",
+    "cal-frentes": "Estoy imprimiendo los frentes de prueba. Van a salir dos hojas con una flecha roja.",
+    "salida-pregunta": "Mira las hojas que salieron, sin moverlas. Fíjate en la de arriba y elige en la pantalla qué ves: si se ve lo impreso y hacia dónde apunta la flecha, o si se ve el lado en blanco.",
+    "cal-reversos": "Ahora imprimo los reversos de prueba. Espera a que salgan las dos hojas.",
+    "cal-pregunta": "Toma la hoja que dice hoja uno, frente, y dale vuelta. Elige en la pantalla la opción que coincide con lo que ves atrás.",
+    "cal-otra-vez": "Entendido: tu impresora imprime por el otro lado. Repitamos la prueba con dos hojas nuevas.",
+    "cal-lista": "¡Listo! Tu impresora quedó calibrada. Desde ahora los reversos van a salir siempre en su lugar.",
+
+    "mov-none-arriba": "Toma el mazo sin desordenarlo. No lo des vuelta ni lo gires: solo trasládalo a la bandeja, con lo impreso hacia arriba y la flecha apuntando hacia adentro de la impresora. Cuando esté puesto, aprieta el botón rojo.",
+    "mov-none-abajo": "Toma el mazo sin desordenarlo y trasládalo a la bandeja tal como está, sin darlo vuelta: lo impreso queda hacia abajo. Cuando esté puesto, aprieta el botón rojo.",
+    "mov-rotate": "Toma el mazo sin desordenarlo y gíralo sobre la mesa, como si fuera un volante, hasta que la flecha apunte hacia la impresora. No lo des vuelta. Ponlo en la bandeja con lo impreso hacia arriba, y aprieta el botón rojo.",
+    "mov-book-arriba": "Toma el mazo sin desordenarlo y dalo vuelta como la página de un libro, hacia el lado. Ponlo en la bandeja con lo impreso hacia arriba y la flecha apuntando hacia adentro. Luego aprieta el botón rojo.",
+    "mov-book-abajo": "Toma el mazo sin desordenarlo y dalo vuelta como la página de un libro, hacia el lado. Ponlo en la bandeja con lo impreso hacia abajo y la flecha apuntando hacia adentro. Luego aprieta el botón rojo.",
+    "mov-calendar": "Toma el mazo sin desordenarlo y dalo vuelta hacia ti, como la hoja de un calendario. Ponlo en la bandeja con lo impreso hacia abajo, y aprieta el botón rojo.",
+
+    "run-preparando": "Estoy ordenando las páginas de todas las copias. Es solo un momento.",
+    "run-papel": "Pon en la bandeja la cantidad de hojas que te indico en la pantalla. Cuando estén listas, aprieta Imprimir caras de adelante.",
+    "run-lote": "Este trabajo va por partes, porque no cabe todo en la bandeja. Saca las hojas terminadas, pon hojas nuevas y aprieta el botón rojo.",
+    "run-frentes": "Estoy imprimiendo las caras de adelante. No toques las hojas mientras salen: te aviso cuando haya que darlas vuelta.",
+    "run-reversos": "Ahora salen los reversos. Ya casi terminamos.",
+    "run-listo": "¡Listo! Tus copias quedaron impresas por los dos lados.",
+    "run-error": "No pude enviar el trabajo a la impresora. Revisa que esté encendida y conectada, y aprieta Reintentar.",
+    "run-lento": "La impresora está tardando más de lo normal. Revisa que tenga papel y que no muestre ningún error."
+  }
+}

@@ -10,6 +10,15 @@ Windows y Linux · Desarrollado por <a href="https://safe-tech.cl">SafeTech</a><
 
 ## Qué hace
 
+- **Guía por voz**: 36 frases grabadas con la voz Zabra (ElevenLabs), que dicen qué hacer en cada paso, incluido el movimiento exacto del mazo para tu impresora. Se activa o desactiva en el primer inicio y en cualquier momento con el botón **Voz**, arriba a la derecha.
+- **Sonidos** al avanzar, cuando te toca actuar y cuando algo termina. Se activan o desactivan por separado con el botón **Sonidos**.
+- **Tour guiado** de un minuto en el primer inicio, que ilumina cada parte de la pantalla. Se repite con el botón **?**.
+- **Calibración obligatoria** en el primer inicio. Se puede saltar, pero solo marcando una casilla que acepta el riesgo de perder hojas.
+
+| Bienvenida | Tour |
+|---|---|
+| ![Bienvenida: voz y sonidos](docs/00-bienvenida.png) | ![Tour por la app](docs/20-tour-hojas.png) |
+
 - **Encuentra tus documentos solo**: busca en Escritorio, Documentos, Descargas e Imágenes (también OneDrive) y los ordena por fecha. Puedes filtrar por tipo, escribir el nombre, abrir otro archivo o arrastrarlo a la ventana.
 - **Acepta casi cualquier archivo**: PDF, Word, Excel, PowerPoint (con Microsoft Office o LibreOffice), OpenDocument, imágenes, texto y HTML.
 - **Vista previa antes de gastar papel**: páginas con miniaturas y una vista **Hojas** que simula cada hoja; pasas el mouse por encima y la hoja se da vuelta para mostrar su reverso.

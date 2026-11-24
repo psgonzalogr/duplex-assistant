@@ -12,6 +12,8 @@ const invoke = (ch, ...a) => ipcRenderer.invoke(ch, ...a).then((r) => {
 
 contextBridge.exposeInMainWorld('da', {
   info: () => invoke('app:info'),
+  settings: () => invoke('settings:get'),
+  setSettings: (patch) => invoke('settings:set', patch),
   openExternal: (url) => invoke('app:open-external', url),
   printers: () => invoke('printers:list'),
   printerProfile: (name) => invoke('printer:get', name),

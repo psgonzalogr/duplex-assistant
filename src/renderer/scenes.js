@@ -82,6 +82,15 @@ export function movementFor(outputFace, faceUp) {
   return faceUp ? 'none' : 'book'; // sin dato: guía genérica
 }
 
+/** Frase de la guía por voz para el movimiento del mazo. */
+export function voiceForMovement(profile) {
+  const faceUp = profile.faceUp !== false;
+  const move = movementFor(profile.outputFace || null, faceUp);
+  if (move === 'none') return faceUp ? 'mov-none-arriba' : 'mov-none-abajo';
+  if (move === 'book') return faceUp ? 'mov-book-arriba' : 'mov-book-abajo';
+  return move === 'rotate' ? 'mov-rotate' : 'mov-calendar';
+}
+
 const MOVE_TEXT = {
   none: { short: 'No lo des vuelta', long: 'No lo des vuelta ni lo gires: solo trasládalo tal como está.' },
   rotate: { short: 'Gíralo sobre la mesa', long: 'Gíralo sobre la mesa, como un volante, hasta que la flecha apunte hacia la impresora. No lo des vuelta.' },

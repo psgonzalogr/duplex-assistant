@@ -1,7 +1,7 @@
 // Asistente de impresión: papel → frentes → dar vuelta → reversos (por lote) → listo.
 import { h, icon, plural, toast } from '../ui.js';
 import { Flow, printPhase } from '../flow.js';
-import { scene, paperGuide } from '../scenes.js';
+import { scene, paperGuide, voiceForMovement } from '../scenes.js';
 import { askOutputFace } from './calibrate.js';
 
 export async function runPrint(root, app, job) {
@@ -14,7 +14,7 @@ export async function runPrint(root, app, job) {
   // Paso previo mientras se arman los PDF
   const prep = new Flow(root, { doc, steps: [{ id: 'prep', label: 'Preparando las hojas' }] });
   prep.mark('prep');
-  prep.stage({ chip: 'wait', title: 'Ordenando las páginas…', lead: 'Estoy armando el orden exacto de los frentes y los reversos de todas las copias.', scene: scene('print', { text: 'Ordenando…' }) });
+  prep.stage({ chip: 'wait', voice: 'run-preparando', title: 'Ordenando las páginas…', lead: 'Estoy armando el orden exacto de los frentes y los reversos de todas las copias.', scene: scene('print', { text: 'Ordenando…' }) });
   try {
     plan = await api.planJob({ pdfPath: job.pdfPath, copies: job.copies, range: job.range, printer });
   } catch (e) {
@@ -47,6 +47,7 @@ export async function runPrint(root, app, job) {
     const first = b.index === 1;
     let ctl = flow.stage({
       chip: 'act',
+      voice: first ? 'run-papel' : 'run-lote',
       title: first ? `Pon al menos ${plural(b.sheets, 'hoja', 'hojas')} en la bandeja` : `Lote ${b.index}: saca las hojas terminadas y pon ${plural(b.sheets, 'hoja nueva', 'hojas nuevas')}`,
       lead: multi
         ? `Tu bandeja admite unas ${profile.capacity} hojas, así que el trabajo va en <b>${plan.batches.length} lotes</b>. Este lote lleva las copias ${b.firstCopy}${b.lastCopy !== b.firstCopy ? `–${b.lastCopy}` : ''}.`
@@ -66,6 +67,7 @@ export async function runPrint(root, app, job) {
       flow.mark(`fronts${b.index}`);
       ctl = flow.stage({
         chip: 'wait',
+        voice: 'run-frentes',
         title: 'Imprimiendo las caras de adelante',
         lead: 'No toques las hojas mientras salen. Te aviso cuando haya que darlas vuelta.',
         scene: scene('print'),
@@ -82,6 +84,7 @@ export async function runPrint(root, app, job) {
       if (!profile.outputFace) profile = await askOutputFace(flow, api, printer);
       ctl = flow.stage({
         chip: 'act',
+        voice: voiceForMovement(profile),
         title: `Toma las ${b.sheets} hojas y ponlas de nuevo en la bandeja`,
         lead: 'Sigue los 3 pasos de la animación, sin cambiar el orden de las hojas.',
         scene: paperGuide(profile, { sheets: b.sheets }),
@@ -97,6 +100,7 @@ export async function runPrint(root, app, job) {
       flow.mark(`backs${b.index}`);
       ctl = flow.stage({
         chip: 'wait',
+        voice: 'run-reversos',
         title: 'Imprimiendo los reversos',
         lead: 'Ya casi. Las hojas salen terminadas y en orden.',
         scene: scene('print'),
@@ -110,6 +114,7 @@ export async function runPrint(root, app, job) {
   flow.mark('__end');
   const end = flow.stage({
     chip: 'done',
+    voice: 'run-listo',
     title: `¡Listo! ${plural(plan.copies, 'copia impresa', 'copias impresas')} a doble cara`,
     lead: `Usaste <b>${plural(plan.totalSheets, 'hoja', 'hojas')}</b> en vez de ${plan.totalSheets * 2 - plan.blanksPerCopy * plan.copies}. Si una hoja salió con el reverso girado o en otro orden, vuelve a calibrar la impresora en <b>Impresora</b>.`,
     scene: scene('done'),
@@ -131,6 +136,8 @@ async function safePhase(flow, fn) {
       const ctl = flow.stage({
         chip: 'act',
         chipText: 'ATENCIÓN',
+        voice: 'run-error',
+        sound: 'error',
         title: 'No se pudo enviar a la impresora',
         lead: e.message,
         note: h('div.note.warn', icon('alert'), h('p', 'Revisa que la impresora esté encendida y conectada. Ninguna hoja se imprimió en este paso.')),

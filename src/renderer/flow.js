@@ -1,5 +1,8 @@
 // Armazón común de los asistentes: lista de pasos + escenario con «Ahora…», animación y progreso.
 import { h, icon, clear, badge } from './ui.js';
+import { say, play } from './audio.js';
+
+const CHIP_SOUND = { act: 'aviso', wait: 'paso', done: 'logro' };
 
 const CHIP = {
   act: { cls: 'act', text: 'TE TOCA', ic: 'hand' },
@@ -58,17 +61,20 @@ export class Flow {
 
   /**
    * Muestra un paso. Devuelve controles: setProgress, wait (promesa del botón elegido), setNote.
-   * cfg: { chip:'act'|'wait'|'done', title, lead, scene, progress, actions:[{key,label,primary,icon,big}], note }
+   * cfg: { chip:'act'|'wait'|'done', title, lead, scene, progress, actions:[{key,label,primary,icon,big}], note,
+   *        voice: id de la frase grabada, sound: nombre del sonido (false = ninguno) }
    */
   stage(cfg) {
     const chip = CHIP[cfg.chip || 'act'];
+    if (cfg.sound !== false) play(cfg.sound || CHIP_SOUND[cfg.chip || 'act']);
+    say(cfg.voice);
     const actionsEl = h('div.stage-actions');
     let resolveAction;
     const waiting = new Promise((r) => { resolveAction = r; });
     for (const a of cfg.actions || []) {
       const b = h('button.btn', {
         class: [a.primary && 'primary', a.big !== false && a.primary && 'big', a.ghost && 'ghost'].filter(Boolean).join(' '),
-        onclick: () => { actionsEl.querySelectorAll('button').forEach((x) => (x.disabled = true)); resolveAction(a.key); },
+        onclick: () => { if (a.primary) play('paso'); actionsEl.querySelectorAll('button').forEach((x) => (x.disabled = true)); resolveAction(a.key); },
       }, a.icon ? icon(a.icon) : null, a.label);
       actionsEl.append(b);
     }
@@ -148,6 +154,8 @@ export async function printPhase(api, ctl, { file, printer, sheets, secPerSheet,
       left > 2 ? `faltan ~${fmt(left)}` : 'terminando…');
     if (!warned && elapsed > est * 1.7 + 20 && inQueue) {
       warned = true;
+      play('aviso');
+      say('run-lento');
       ctl.setNote(h('div.note.warn', icon('alert'), h('div', h('strong', 'Está tardando más de lo normal'),
         h('p', 'Revisa que la impresora esté encendida, tenga papel y no muestre un error. Cuando todas las hojas hayan salido, aprieta «Ya salieron todas».'))));
     }
@@ -158,6 +166,7 @@ export async function printPhase(api, ctl, { file, printer, sheets, secPerSheet,
   skipBtn.remove();
   const elapsed = (performance.now() - t0) / 1000;
   ctl.setProgress(1, `${label} · <b>${sheets}</b> de ${sheets}`, 'listo', true);
+  play('exito');
   if (!skipped && seen) api.learnSpeed?.(printer, sheets, elapsed - warm);
   await sleep(500);
   return skipped ? 'skipped' : 'done';

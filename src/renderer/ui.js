@@ -29,8 +29,15 @@ import info from 'lucide-static/icons/info.svg?raw';
 import book from 'lucide-static/icons/book-open.svg?raw';
 import arrowLeft from 'lucide-static/icons/arrow-left.svg?raw';
 import circleCheck from 'lucide-static/icons/circle-check.svg?raw';
+import volumeOn from 'lucide-static/icons/volume-2.svg?raw';
+import volumeOff from 'lucide-static/icons/volume-x.svg?raw';
+import bell from 'lucide-static/icons/bell.svg?raw';
+import bellOff from 'lucide-static/icons/bell-off.svg?raw';
+import help from 'lucide-static/icons/circle-help.svg?raw';
+import playIcon from 'lucide-static/icons/play.svg?raw';
 
 const ICONS = {
+  volumeOn, volumeOff, bell, bellOff, help, play: playIcon,
   printer, fileText, fileSheet, presentation, image, file, folderOpen, search, settings, refresh, check,
   chevronLeft, chevronRight, minus, plus, rotate, layers, alert, hourglass, hand, x, external, sliders,
   sparkles, flip, arrowUp, info, book, arrowLeft, circleCheck,

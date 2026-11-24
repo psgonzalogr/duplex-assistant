@@ -1,3 +1,4 @@
+import { startTour } from './tour.js';
 // Autoprueba visual: recorre las pantallas con una impresora simulada y guarda capturas.
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -33,7 +34,14 @@ export async function selftest(app, samplePath) {
     learnSpeed: async () => null,
     printerProfile: async (n) => (fakeProfile ||= { ...(await real.printerProfile(n)), calibrated: true, secPerSheet: 9, faceUp: true, outputFace: 'up-out' }),
     updatePrinter: async (_n, patch) => (fakeProfile = { ...fakeProfile, ...patch }),
+    settings: async () => fakeSettings,
+    setSettings: async (p) => (fakeSettings = { ...fakeSettings, ...p }),
   };
+  // Sin audio y con preferencias simuladas: la autoprueba no suena ni cambia la configuración real.
+  window.__daMute = true;
+  let fakeSettings = { voice: true, sounds: true, onboarded: true };
+  app.S.settings = fakeSettings;
+  app.applySettings();
   // Documentos de ejemplo: las capturas son públicas y no deben mostrar archivos reales del equipo.
   const name0 = samplePath.split(/[\\/]/).pop();
   const dir0 = samplePath.slice(0, -name0.length - 1);
@@ -63,6 +71,9 @@ export async function selftest(app, samplePath) {
     const tag = `${w}`;
     await T.resize(w, hgt);
     fakeProfile = null;
+    app.go('welcome');
+    await wait(1200);
+    await T.capture(`${tag}-00-bienvenida`);
     app.S.selected = null; app.S.prepared = null; app.S.copies = 10; app.S.range = ''; app.S.previewMode = 'pages';
     app.go('home');
     app.rescan();
@@ -88,6 +99,16 @@ export async function selftest(app, samplePath) {
     await until(() => app.S.prepared);
     await wait(1500);
     await T.capture(`${tag}-02-vista-previa`);
+    {
+      const tour = startTour({});
+      for (const [k, n] of [[1, 'documentos'], [4, 'hojas'], [7, 'imprimir'], [9, 'botones']]) {
+        tour.go(k);
+        await wait(700);
+        await T.capture(`${tag}-20-tour-${n}`);
+      }
+      tour.end(false);
+      await wait(300);
+    }
 
     app.current.setMode('sheets');
     await wait(1800);
@@ -102,6 +123,17 @@ export async function selftest(app, samplePath) {
     document.querySelector('.guide')?.scrollIntoView({ block: 'center' });
     await wait(2600);
     await T.capture(`${tag}-17-impresora-guia`);
+
+    // Advertencia al saltar la calibración
+    app.go('calibrate', { returnTo: 'home', skipFirst: true });
+    await until(() => document.querySelector('.risk'));
+    await wait(700);
+    await T.capture(`${tag}-19-riesgo`);
+    document.querySelector('#risk-ok').click();
+    await wait(300);
+    await T.capture(`${tag}-19b-riesgo-aceptado`);
+    app.go('home');
+    await wait(600);
 
     // Flujo de impresión
     app.go('run', { job: { file: app.S.selected, pdfPath: app.S.prepared.pdfPath, copies: 10, range: '' } });

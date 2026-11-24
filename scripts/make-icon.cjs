@@ -4,7 +4,7 @@ const { app, BrowserWindow } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'main.js'), 'utf8');
+const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer', 'brand.js'), 'utf8');
 const svg = src.match(/export const MARK = `([\s\S]*?)`;/)[1]
   .replace('<svg ', '<svg width="512" height="512" ');
 

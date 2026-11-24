@@ -41,6 +41,7 @@ function createWindow() {
       contextIsolation: true,
       sandbox: true,
       nodeIntegration: false,
+      autoplayPolicy: 'no-user-gesture-required', // la guía por voz habla apenas se abre la app
     },
   });
   win.setMenuBarVisibility(false);
@@ -81,6 +82,14 @@ function registerIpc() {
   }));
   handle('app:open-external', (url) => {
     if (/^https:\/\/([a-z0-9-]+\.)*(safe-tech\.cl|github\.com)\//i.test(url)) shell.openExternal(url);
+  });
+
+  // Preferencias generales: voz, sonidos y primer inicio.
+  handle('settings:get', () => ({ voice: true, sounds: true, onboarded: false, ...store.get('settings', {}) }));
+  handle('settings:set', (patch) => {
+    const s = { voice: true, sounds: true, onboarded: false, ...store.get('settings', {}), ...patch };
+    store.set('settings', s);
+    return s;
   });
 
   handle('update:state', () => updater.getState());
