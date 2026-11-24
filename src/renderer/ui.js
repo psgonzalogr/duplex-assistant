@@ -35,12 +35,15 @@ import bell from 'lucide-static/icons/bell.svg?raw';
 import bellOff from 'lucide-static/icons/bell-off.svg?raw';
 import help from 'lucide-static/icons/circle-help.svg?raw';
 import playIcon from 'lucide-static/icons/play.svg?raw';
+import mail from 'lucide-static/icons/mail.svg?raw';
+import copy from 'lucide-static/icons/copy.svg?raw';
+import feedback from 'lucide-static/icons/message-square-warning.svg?raw';
 
 const ICONS = {
   volumeOn, volumeOff, bell, bellOff, help, play: playIcon,
   printer, fileText, fileSheet, presentation, image, file, folderOpen, search, settings, refresh, check,
   chevronLeft, chevronRight, minus, plus, rotate, layers, alert, hourglass, hand, x, external, sliders,
-  sparkles, flip, arrowUp, info, book, arrowLeft, circleCheck,
+  sparkles, flip, arrowUp, info, book, arrowLeft, circleCheck, mail, copy, feedback,
 };
 
 export function icon(name, cls = '') {

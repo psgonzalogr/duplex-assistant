@@ -32,6 +32,34 @@ export async function askFeed(flow, api, printer, opts = {}) {
   return saveFeed(api, printer, picked, opts);
 }
 
+/**
+ * Pregunta qué hoja de prueba quedó arriba del montón. Si es la HOJA 1, el sistema (o el driver)
+ * imprime cada trabajo de la última página a la primera: pasa en algunos drivers de Windows y no en CUPS.
+ * Con esto el mazo termina ordenado, con la página 1 arriba, en cualquier impresora y sistema.
+ */
+export async function askStackTop(flow, api, printer, outputFace) {
+  const down = outputFace === 'down';
+  let picked;
+  const opts = [
+    { key: 'last', title: 'HOJA 2 · FRENTE', text: 'la segunda hoja quedó encima.', n: 2 },
+    { key: 'first', title: 'HOJA 1 · FRENTE', text: 'la primera hoja quedó encima.', n: 1 },
+  ];
+  const ctl = flow.stage({
+    chip: 'act',
+    voice: 'apilado-pregunta',
+    title: '¿Qué hoja quedó arriba del montón?',
+    lead: down
+      ? 'Levanta la hoja de arriba, dale vuelta y mira qué dice. Después déjala como estaba.'
+      : 'Mira la hoja de arriba, sin moverla. Con esto el mazo terminará ordenado, con la página 1 arriba.',
+    body: h('div.choices.stack-choices', opts.map((o) =>
+      h('button.choice', { onclick: () => { picked = o.key; ctl.resolve(o.key); } },
+        h('span.mini-sheets', mini(o.n, { down: outputFace === 'up-out' })),
+        h('span', h('b', o.title), h('span', o.text))))),
+  });
+  await ctl.wait();
+  return api.updatePrinter(printer, { stackReversed: picked === 'first' });
+}
+
 /** Pregunta cómo salen las hojas de la impresora y lo guarda en el perfil. */
 export async function askOutputFace(flow, api, printer) {
   let picked;
@@ -124,7 +152,7 @@ export async function runCalibration(root, app) {
     await ctl.wait();
 
     flow.mark('fronts');
-    ctl = flow.stage({ chip: 'wait', voice: 'cal-frentes', title: 'Imprimiendo los frentes de prueba', lead: 'Saldrán dos hojas con una flecha y las palabras <b>HOJA 1 · FRENTE</b> y <b>HOJA 2 · FRENTE</b>.', scene: scene('print'), progress: true });
+    ctl = flow.stage({ chip: 'wait', voice: 'cal-frentes', title: 'Imprimiendo los frentes de prueba', lead: 'Saldrán dos hojas con una flecha y las palabras <b>HOJA 1 · FRENTE</b> y <b>HOJA 2 · FRENTE</b>.', scene: scene('print', { outputFace: profile.outputFace }), progress: true });
     try {
       await printPhase(api, ctl, { file: cal.fronts, printer, sheets: 2, secPerSheet: profile.secPerSheet, label: 'Frentes de prueba' });
     } catch (e) {
@@ -133,7 +161,11 @@ export async function runCalibration(root, app) {
     }
 
     flow.mark('flip');
-    if (!askedOut) { profile = await askOutputFace(flow, api, printer); askedOut = true; }
+    if (!askedOut) {
+      profile = await askOutputFace(flow, api, printer);
+      profile = await askStackTop(flow, api, printer, profile.outputFace);
+      askedOut = true;
+    }
     ctl = flow.stage({
       chip: 'act',
       voice: voiceForMovement(profile),
@@ -145,7 +177,7 @@ export async function runCalibration(root, app) {
     await ctl.wait();
 
     flow.mark('backs');
-    ctl = flow.stage({ chip: 'wait', voice: 'cal-reversos', title: 'Imprimiendo los reversos de prueba', lead: 'Ahora atrás se imprime <b>HOJA 1 · REVERSO</b> y <b>HOJA 2 · REVERSO</b>.', scene: scene('print'), progress: true });
+    ctl = flow.stage({ chip: 'wait', voice: 'cal-reversos', title: 'Imprimiendo los reversos de prueba', lead: 'Ahora atrás se imprime <b>HOJA 1 · REVERSO</b> y <b>HOJA 2 · REVERSO</b>.', scene: scene('print', { outputFace: profile.outputFace }), progress: true });
     try {
       await printPhase(api, ctl, { file: cal.backs, printer, sheets: 2, secPerSheet: profile.secPerSheet, label: 'Reversos de prueba' });
     } catch (e) {

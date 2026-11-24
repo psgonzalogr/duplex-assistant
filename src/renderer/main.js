@@ -1,4 +1,5 @@
 import { h, icon, clear, toast } from './ui.js';
+import { openFeedback } from './feedback.js';
 import { mountHome } from './views/home.js';
 import { mountPrinter } from './views/printer.js';
 import { runPrint } from './views/run.js';
@@ -72,6 +73,7 @@ function shell() {
     h('span.made', 'Desarrollado por', h('img', { src: logoSafeTech, alt: 'SafeTech' })),
     h('a', { href: '#', onclick: (e) => { e.preventDefault(); app.api.openExternal('https://safe-tech.cl/'); } }, 'safe-tech.cl'),
     h('div.spacer'),
+    h('button.linkish', { onclick: () => openFeedback(app) }, 'Reportar un problema o sugerencia'),
     h('button.linkish', { onclick: () => app.updater.checkNow() }, 'Buscar actualizaciones'),
     h('a', { href: '#', onclick: (e) => { e.preventDefault(); app.api.openExternal('https://github.com/psgonzalogr/duplex-assistant/'); } }, 'Ayuda y código'),
     h('span.tnum', { id: 'ver' }, ''));

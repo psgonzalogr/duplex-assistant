@@ -469,6 +469,11 @@ h1, h2, h3 { color: var(--texto); margin: 0; font-family: var(--font-display); l
 .side-view svg { display: block; width: 100%; height: auto; }
 .side-view { position: absolute; left: 16px; bottom: 12px; width: 230px; padding: 6px 8px 2px; border-radius: 12px; background: rgba(9,17,31,.75); border: 1px solid var(--linea); opacity: .35; transition: opacity .3s; }
 .guide-scene[data-step='3'] .side-view { opacity: 1; }
+/* La impresora entrega la hoja con la parte de arriba hacia ti: se gira solo el dibujo de la cara */
+.paper.flip-out .face-print { rotate: 180deg; }
+.arrow-legend { position: absolute; right: 12px; bottom: 10px; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--apagado); }
+.arrow-legend .arrow { width: 9px; height: 16px; color: var(--rojo); display: inline-flex; }
+.arrow-legend .arrow svg { width: 100%; height: 100%; }
 /* Alimentador de arriba: queda detrás de la impresora (más arriba en el dibujo) y la impresora baja */
 .scene .feeder { position: absolute; left: 50%; top: 12px; width: 250px; height: 66px; translate: -50% 0; border-radius: 12px; border: 2px dashed var(--linea-fuerte); background: rgba(9,17,31,.35); }
 .scene .feeder .tray-label { left: auto; right: -12px; bottom: 50%; translate: 100% 50%; }
@@ -628,3 +633,15 @@ h1, h2, h3 { color: var(--texto); margin: 0; font-family: var(--font-display); l
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Reportar un problema o sugerencia */
+dialog.feedback { width: min(520px, calc(100vw - 32px)); padding: 28px 28px 22px; border-radius: var(--r-dialog); border: 1.5px solid var(--linea-fuerte); background: var(--pizarra); color: var(--texto); box-shadow: 0 20px 60px rgba(0,0,0,.6); }
+dialog.feedback::backdrop { background: rgba(5,10,20,.65); backdrop-filter: blur(2px); }
+dialog.feedback h2 { margin: 0 36px 10px 0; font-size: 22px; font-weight: 600; }
+dialog.feedback > p { margin: 0 0 16px; color: var(--lead); font-size: 15px; line-height: 1.5; }
+dialog.feedback .hint { margin: 14px 0 0; font-size: 13px; color: var(--apagado); }
+.fb-close { position: absolute; right: 14px; top: 14px; }
+.fb-mail { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; background: var(--pozo); border: 1px solid var(--linea); color: var(--rojo-texto); }
+.fb-addr { font-size: 19px; font-weight: 600; color: var(--texto); user-select: all; }
+.fb-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+

@@ -63,7 +63,10 @@ export function scene(mode, opts = {}) {
   }
 
   if (mode === 'print') {
-    root.append(tray('Salida de papel'), paper({ cls: 'out' }));
+    // La hoja sale como la impresora la entrega (según la calibración): flecha hacia la impresora,
+    // hacia ti (dibujo girado) o con el lado en blanco a la vista.
+    const of = opts.outputFace || null;
+    root.append(tray('Salida de papel'), paper({ printed: of !== 'down', cls: of === 'up-out' ? 'out flip-out' : 'out' }));
     root.append(tag(opts.text || 'Imprimiendo…', { cls: 'amber', ic: 'hourglass', style: { left: 'calc(50% + 190px)', top: '60px' } }));
   }
 
@@ -125,7 +128,7 @@ export function voiceForMovement(profile) {
 
 const MOVE_TEXT = {
   none: { short: 'No lo des vuelta', long: 'No lo des vuelta ni lo gires: solo trasládalo tal como está.' },
-  rotate: { short: 'Gíralo sobre la mesa', long: 'Gíralo sobre la mesa, como un volante, hasta que la flecha apunte hacia la impresora. No lo des vuelta.' },
+  rotate: { short: 'Gíralo sobre la mesa', long: 'Gíralo sobre la mesa, como un volante, hasta que la parte de arriba de las hojas apunte hacia la impresora. No lo des vuelta.' },
   book: { short: 'Dalo vuelta hacia el lado', long: 'Dalo vuelta como la página de un libro: hacia el lado, por el borde largo.' },
   calendar: { short: 'Dalo vuelta hacia ti', long: 'Dalo vuelta hacia ti, como la hoja de un calendario: por el borde de abajo.' },
 };
@@ -201,15 +204,16 @@ export function paperGuide(profile, { sheets = null, compact = false } = {}) {
     { t: 'Toma el mazo', d: out === 'down' ? `Toma ${n} que salieron, sin desordenarlas. Se ve el lado en blanco.` : out ? `Toma ${n} que salieron, sin desordenarlas. Se ve lo impreso.` : `Toma ${n} que salieron, sin desordenarlas.` },
     { t: MOVE_TEXT[move].short, d: MOVE_TEXT[move].long },
     top
-      ? { t: 'Ponlo en el alimentador', d: `Ponlo de pie en el alimentador de arriba, con lo impreso ${faceWord(profile, faceUp)} y la flecha apuntando hacia abajo, hacia la ranura.${out === 'down' && faceUp ? ' Si la flecha apunta hacia ti, gíralo sobre la mesa antes de levantarlo.' : ''}` }
-      : { t: 'Ponlo en la bandeja', d: `Con lo impreso hacia ${faceUp ? 'arriba' : 'abajo'} y la flecha apuntando hacia adentro de la impresora.${out === 'down' && faceUp ? ' Si la flecha apunta hacia ti, gíralo sobre la mesa.' : ''}` },
+      ? { t: 'Ponlo en el alimentador', d: `Ponlo de pie en el alimentador de arriba, con lo impreso ${faceWord(profile, faceUp)} y la parte de arriba de las hojas hacia abajo, hacia la ranura.${out === 'down' && faceUp ? ' Si la parte de arriba apunta hacia ti, gíralo sobre la mesa antes de levantarlo.' : ''}` }
+      : { t: 'Ponlo en la bandeja', d: `Con lo impreso hacia ${faceUp ? 'arriba' : 'abajo'} y la parte de arriba de las hojas hacia adentro de la impresora.${out === 'down' && faceUp ? ' Si la parte de arriba apunta hacia ti, gíralo sobre la mesa.' : ''}` },
   ];
 
   const mover = paper({ cls: 'mover-js' });
   const badge = h('div.move-badge', { class: move }, h('span.rot', { html: ROT_ARROW }), h('b', MOVE_TEXT[move].short));
   const sc = h('div.scene.guide-scene', { class: [compact && 'compact', top && 'feed-top'].filter(Boolean).join(' '), role: 'img', 'aria-label': steps.map((s, i) => `${i + 1}. ${s.d}`).join(' ') },
     ...printerBody(), top ? feeder() : h('div.tray', h('span.tray-label', 'Bandeja de papel')),
-    h('div.out-spot', h('span.tray-label', 'Salida')), mover, badge, top ? sideViewTop(faceUp) : sideView(faceUp));
+    h('div.out-spot', h('span.tray-label', 'Salida')), mover, badge, top ? sideViewTop(faceUp) : sideView(faceUp),
+    h('div.arrow-legend', h('span.arrow', { html: ARROW }), 'La flecha marca la parte de arriba de tus páginas'));
 
   const items = steps.map((s, i) => h('li', { onclick: () => goTo(i, true) }, h('span.gn', String(i + 1)), h('span', h('b', s.t), h('span', s.d))));
   const list = h('ol.guide-steps', items);
@@ -314,8 +318,8 @@ export function feedChoices(onPick, current = null) {
 /** Opciones para «¿cómo salen las hojas?». */
 export function outputChoices(onPick) {
   const opts = [
-    { key: 'up-in', title: 'Veo lo impreso y la flecha apunta hacia la impresora', face: true, down: false },
-    { key: 'up-out', title: 'Veo lo impreso y la flecha apunta hacia mí', face: true, down: true },
+    { key: 'up-in', title: 'Veo lo impreso, con la parte de arriba hacia la impresora', face: true, down: false },
+    { key: 'up-out', title: 'Veo lo impreso, con la parte de arriba hacia mí', face: true, down: true },
     { key: 'down', title: 'Veo el lado en blanco', text: 'lo impreso quedó por abajo', face: false },
   ];
   return h('div.choices.out-choices', opts.map((o) =>

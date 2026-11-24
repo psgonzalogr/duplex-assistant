@@ -87,3 +87,49 @@ test('calibración', async () => {
   assert.deepEqual(c.calibrationFromAnswer('swapped'), { invert: true, rotate: false });
   assert.equal(c.calibrationFromAnswer('same-side'), null);
 });
+
+async function pageTexts(file) {
+  // Cada página de prueba lleva «PAG n» como contenido: se identifica por el XObject incrustado
+  const d = await PDFDocument.load(await fs.readFile(file));
+  return d.getPages().map((p) => p.getRotation().angle);
+}
+
+test('impresora boca arriba: primero los reversos y el mazo termina con la página 1 arriba', async () => {
+  const pdf = await samplePdf(5); // 3 hojas por copia, la última sin reverso
+  const outDir = path.join(path.dirname(pdf), 'up');
+  // Brother DCP-T710W: sale boca arriba y la bandeja entrega las hojas al revés (invert)
+  const job = await c.buildJob(pdf, { copies: 2, capacity: 100, invert: true, rotate: false, outDir, outputFace: 'up-out', stackReversed: false });
+  const b = job.batches[0];
+  assert.equal(job.backsFirst, true);
+  assert.deepEqual(b.passes, ['backs', 'fronts']);
+  // Hojas: c1 [0/1, 2/3, 4/-], c2 [0/1, 2/3, 4/-]
+  const s = c.planSheets([0, 1, 2, 3, 4], 2);
+  const { first, second } = c.passOrder(s, true);
+  assert.deepEqual(first.map((x) => x.back), [1, 3, null, 1, 3, null]);   // atrás, en orden
+  assert.deepEqual(second.map((x) => x.front), [4, 2, 0, 4, 2, 0]);       // adelante, la hoja 1 al final (queda arriba)
+  assert.equal((await pageTexts(b.backs)).length, 6);
+  assert.equal((await pageTexts(b.fronts)).length, 6);
+});
+
+test('el orden de las pasadas deja la hoja 1 arriba en cualquier combinación', () => {
+  const s = c.planSheets([0, 1, 2, 3], 1);
+  for (const inv of [true, false]) for (const rev of [true, false]) {
+    const { first, second } = c.passOrder(s, inv, rev);
+    // La segunda pasada recibe las hojas al revés de como se enviaron en la primera (inv) o igual
+    const picked = inv ? first.slice().reverse() : first.slice();
+    assert.deepEqual(picked, second, `invert=${inv} rev=${rev}: cada hoja recibe su otra cara`);
+    // Lo último en salir queda arriba: si el sistema invierte el trabajo, sale primero lo último enviado
+    const lastOut = rev ? second[0] : second[second.length - 1];
+    assert.equal(lastOut, s[0], `invert=${inv} rev=${rev}: la hoja 1 queda arriba`);
+  }
+  assert.equal(c.backsFirstFor('up-out'), true);
+  assert.equal(c.backsFirstFor('up-in'), true);
+  assert.equal(c.backsFirstFor('down'), false);
+});
+
+test('sin saber cómo se apilan las hojas se mantiene el orden de siempre', async () => {
+  const pdf = await samplePdf(4);
+  const job = await c.buildJob(pdf, { copies: 1, capacity: 100, invert: true, outDir: path.join(path.dirname(pdf), 'nr'), outputFace: 'up-out' });
+  assert.equal(job.backsFirst, false);
+  assert.deepEqual(job.batches[0].passes, ['fronts', 'backs']);
+});

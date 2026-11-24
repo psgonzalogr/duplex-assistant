@@ -11,6 +11,7 @@ const DEFAULT_PRINTER = {
   feed: null,         // por dónde entra el papel: 'bottom' (cajón o bandeja abajo) | 'top' (alimentador de arriba) | null
   faceUp: true,       // poner el mazo con la cara impresa hacia arriba (en un alimentador de arriba: hacia ti)
   outputFace: null,   // cómo salen las hojas: 'up-in' | 'up-out' | 'down' | null (no se sabe)
+  stackReversed: null, // el sistema/driver imprime el trabajo de la última página a la primera (lo mide la calibración)
   invertFix: false,   // la calibración vio que esta impresora hace lo contrario de lo esperado
   riskAccepted: false, // el usuario saltó la calibración aceptando el riesgo
   capacity: 100,      // hojas por pasada (bandeja)

@@ -5,8 +5,8 @@ import { saveFeed } from './calibrate.js';
 
 const OUTPUTS = [
   ['', 'No lo sé todavía (se pregunta al imprimir)'],
-  ['up-in', 'Se ve lo impreso y la flecha apunta hacia la impresora'],
-  ['up-out', 'Se ve lo impreso y la flecha apunta hacia mí'],
+  ['up-in', 'Se ve lo impreso, con la parte de arriba hacia la impresora'],
+  ['up-out', 'Se ve lo impreso, con la parte de arriba hacia mí'],
   ['down', 'Se ve el lado en blanco'],
 ];
 
@@ -47,11 +47,15 @@ export function mountPrinter(root, app) {
       prof.calibrated
         ? h('div.note.ok', icon('circleCheck'), h('p', 'Calibrada. La app sabe cómo dar vuelta los reversos en esta impresora.'))
         : h('div.note.warn', icon('alert'), h('p', 'Todavía no está calibrada. Usa 2 hojas de prueba y toma un minuto.')),
+      prof.calibrated && typeof prof.stackReversed !== 'boolean'
+        ? h('div.note.info', icon('info'), h('p', 'Vuelve a calibrar: ahora la app también aprende en qué orden se apilan las hojas, para que el mazo termine ordenado con la página 1 arriba y no tengas que girar hojas.'))
+        : null,
       h('dl.kv',
         h('dt', 'El papel entra'), h('dd', prof.feed === 'top' ? 'Por arriba (alimentador)' : prof.feed === 'bottom' ? 'Por abajo (cajón o bandeja)' : 'Sin dato'),
         h('dt', 'Mazo al darlo vuelta'), h('dd', `Cara impresa ${faceWord(prof)}`),
         h('dt', 'Orden de los reversos'), h('dd', `${prof.effectiveInvert ? 'Invertido' : 'Normal'}${prof.outputFace ? (prof.invertFix ? ' (corregido por la calibración)' : ' (según el movimiento)') : ''}`),
         h('dt', 'Reversos girados 180°'), h('dd', prof.rotate ? 'Sí' : 'No'),
+        h('dt', 'Mazo al terminar'), h('dd', typeof prof.stackReversed === 'boolean' && prof.outputFace ? 'Ordenado, con la página 1 arriba' : 'Sin medir'),
         h('dt', 'Velocidad medida'), h('dd', `~${prof.secPerSheet} s por cara`)),
       h('button.btn.primary', { onclick: () => app.go('calibrate', { returnTo: 'printer' }) }, icon('sparkles'), prof.calibrated ? 'Volver a calibrar' : 'Calibrar ahora'));
 

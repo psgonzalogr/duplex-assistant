@@ -112,8 +112,32 @@ async function writeSequence(src, indices, outPath, { rotate180 = false } = {}) 
 }
 
 /**
+ * ¿Conviene imprimir primero las caras de atrás? Sí cuando la impresora deja las hojas boca arriba:
+ * al final del mazo se ve la última cara impresa, y así esa es la de adelante (la página 1 queda arriba).
+ */
+function backsFirstFor(outputFace) {
+  return outputFace === 'up-in' || outputFace === 'up-out';
+}
+
+/**
+ * Orden (de envío) de las dos pasadas de un lote para que el mazo termine ordenado, con la hoja 1 arriba.
+ * La última hoja que sale queda arriba del montón, así que la segunda pasada tiene que SALIR en orden
+ * inverso al documento. Si el sistema imprime cada trabajo de la última página a la primera
+ * (stackReversed, lo mide la calibración; pasa con algunos drivers de Windows), se envía en orden normal.
+ * La primera pasada se ajusta para que la impresora tome las hojas en ese orden
+ * (invert = la segunda pasada recibe las hojas al revés de como se enviaron en la primera).
+ */
+function passOrder(batch, invert, stackReversed = false) {
+  const second = stackReversed ? batch.slice() : batch.slice().reverse();
+  const first = invert ? second.slice().reverse() : second.slice();
+  return { first, second };
+}
+
+/**
  * Genera los PDF de cada lote.
- * opts: { copies, range, capacity, invert, rotate, outDir }
+ * opts: { copies, range, capacity, invert, rotate, outDir, outputFace, stackReversed }
+ * Con outputFace y stackReversed conocidos, el mazo termina ordenado con la página 1 arriba (ver backsFirstFor);
+ * sin él, se usa el orden de siempre: frentes en orden y reversos según invert.
  */
 async function buildJob(pdfPath, opts) {
   const src = await loadSource(pdfPath);
@@ -124,20 +148,39 @@ async function buildJob(pdfPath, opts) {
   const batches = splitBatches(sheets, opts.capacity || sheets.length);
   await fs.mkdir(opts.outDir, { recursive: true });
 
+  // Hace falta saber cómo salen las hojas y en qué orden se apilan; sin eso, el orden de siempre.
+  const known = !!opts.outputFace && typeof opts.stackReversed === 'boolean';
+  const backsFirst = known && backsFirstFor(opts.outputFace);
   const out = [];
   for (let b = 0; b < batches.length; b++) {
     const batch = batches[b];
     const fronts = path.join(opts.outDir, `lote${b + 1}-frentes.pdf`);
-    await writeSequence(src, batch.map((s) => s.front), fronts);
     let backs = null;
-    if (hasBacks(batch)) {
+    const twoSided = hasBacks(batch);
+    if (!twoSided) {
+      await writeSequence(src, batch.map((s) => s.front), fronts);
+    } else if (!known) {
+      await writeSequence(src, batch.map((s) => s.front), fronts);
       backs = path.join(opts.outDir, `lote${b + 1}-reversos.pdf`);
       await writeSequence(src, backOrder(batch, !!opts.invert), backs, { rotate180: !!opts.rotate });
+    } else {
+      // El giro de 180° siempre va en la segunda pasada: la calibración mide la relación entre pasadas.
+      const { first, second } = passOrder(batch, !!opts.invert, opts.stackReversed);
+      backs = path.join(opts.outDir, `lote${b + 1}-reversos.pdf`);
+      if (backsFirst) {
+        await writeSequence(src, first.map((s) => s.back), backs);
+        await writeSequence(src, second.map((s) => s.front), fronts, { rotate180: !!opts.rotate });
+      } else {
+        await writeSequence(src, first.map((s) => s.front), fronts);
+        await writeSequence(src, second.map((s) => s.back), backs, { rotate180: !!opts.rotate });
+      }
     }
     out.push({
       index: b + 1,
       sheets: batch.length,
       blankBacks: batch.filter((s) => s.back === null).length, // hojas que pasan sin imprimir atrás
+      // Pasadas en el orden en que se imprimen
+      passes: !twoSided ? ['fronts'] : backsFirst ? ['backs', 'fronts'] : ['fronts', 'backs'],
       fronts,
       backs,
       firstCopy: batch[0].copy,
@@ -152,6 +195,7 @@ async function buildJob(pdfPath, opts) {
     copies,
     blanksPerCopy: pages.length % 2,
     lastPage: pages[pages.length - 1] + 1, // número (1-based) de la última página de cada copia
+    backsFirst: backsFirst && hasBacks(sheets),
     batches: out,
   };
 }
@@ -230,5 +274,5 @@ async function pageCount(pdfPath) {
 
 module.exports = {
   parseRange, planSheets, splitBatches, backOrder, buildJob, buildCalibration, calibrationFromAnswer, pageCount,
-  keepsOrder, effectiveInvert,
+  keepsOrder, effectiveInvert, backsFirstFor, passOrder,
 };

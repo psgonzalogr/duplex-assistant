@@ -32,7 +32,7 @@ export async function selftest(app, samplePath) {
     print: async () => { await wait(300); return { ref: 'test' }; },
     queue: async () => [{ name: '', printed: 0, total: 0, status: '' }],
     learnSpeed: async () => null,
-    printerProfile: async (n) => (fakeProfile ||= { ...(await real.printerProfile(n)), calibrated: true, secPerSheet: 9, faceUp: true, outputFace: 'up-out', feed: 'bottom' }),
+    printerProfile: async (n) => (fakeProfile ||= { ...(await real.printerProfile(n)), calibrated: true, secPerSheet: 9, faceUp: true, outputFace: 'up-out', feed: 'bottom', stackReversed: false }),
     updatePrinter: async (_n, patch) => (fakeProfile = { ...fakeProfile, ...patch }),
     settings: async () => fakeSettings,
     setSettings: async (p) => (fakeSettings = { ...fakeSettings, ...p }),
@@ -94,6 +94,14 @@ export async function selftest(app, samplePath) {
     await T.capture(`${tag}-15-boton-barra`);
     app.updater.show({ status: 'none' });
 
+    // Reportar un problema o sugerencia
+    clickText('Reportar un problema');
+    await until(() => document.querySelector('dialog.feedback[open]'));
+    await wait(500);
+    await T.capture(`${tag}-25-reportar`);
+    document.querySelector('dialog.feedback .fb-close').click();
+    await wait(300);
+
     const name = samplePath.split(/[\\/]/).pop();
     app.current.select({ path: samplePath, name, dir: samplePath.slice(0, -name.length - 1), kind: 'pdf', size: 1, mtime: Date.now() });
     await until(() => app.S.prepared);
@@ -140,8 +148,9 @@ export async function selftest(app, samplePath) {
     await until(() => document.querySelector('.stage h1')?.textContent.includes('bandeja'));
     await wait(700);
     await T.capture(`${tag}-05-papel`);
-    clickText('Imprimir caras de adelante');
-    await until(() => document.querySelector('.fill')?.style.width && document.querySelector('.stage h1')?.textContent.includes('adelante'));
+    // Según la impresora real, primero van las caras de adelante o las de atrás
+    clickText('Imprimir caras de');
+    await until(() => document.querySelector('.fill')?.style.width && document.querySelector('.stage h1')?.textContent.includes('Imprimiendo las caras'));
     await wait(3200);
     await T.capture(`${tag}-06-imprimiendo`);
     clickText('Ya salieron todas');
@@ -159,8 +168,9 @@ export async function selftest(app, samplePath) {
     await wait(1400);
     await T.capture(`${tag}-07d-bandeja`);
     clickText('Ya las puse');
-    await until(() => document.querySelector('.stage h1')?.textContent.includes('reversos'));
-    await wait(800);
+    await until(() => /reversos|caras de adelante/.test(document.querySelector('.stage h1')?.textContent || ''));
+    await wait(1200);
+    await T.capture(`${tag}-07e-segunda-pasada`);
     clickText('Ya salieron todas');
     await until(() => document.querySelector('.stage h1')?.textContent.includes('Listo'));
     await wait(1200);
@@ -184,6 +194,10 @@ export async function selftest(app, samplePath) {
     await wait(600);
     await T.capture(`${tag}-16-salida`);
     document.querySelectorAll('.out-choices .choice')[2].click();
+    await until(() => document.querySelector('.stack-choices'));
+    await wait(600);
+    await T.capture(`${tag}-16b-apilado`);
+    document.querySelector('.stack-choices .choice').click();
     await until(() => document.querySelector('.stage h1')?.textContent.includes('Toma las 2'));
     await wait(2000);
     await T.capture(`${tag}-18-calibrar-guia-blanco`);

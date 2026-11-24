@@ -82,6 +82,8 @@ function registerIpc() {
   }));
   handle('app:open-external', (url) => {
     if (/^https:\/\/([a-z0-9-]+\.)*(safe-tech\.cl|github\.com)\//i.test(url)) shell.openExternal(url);
+    // Reportar problemas o sugerencias: solo el correo de SafeTech
+    else if (/^mailto:contacto@safe-tech\.cl(\?|$)/i.test(url)) shell.openExternal(url);
   });
 
   // Preferencias generales: voz, sonidos y primer inicio.
@@ -150,7 +152,7 @@ function registerIpc() {
     const prof = store.printer(printer);
     const outDir = path.join(os.tmpdir(), 'duplex-assistant', 'trabajos', String(Date.now()));
     const plan = await compose.buildJob(pdfPath, {
-      copies, range, capacity: prof.capacity, invert: store.effectiveInvert(prof), rotate: prof.rotate, outDir,
+      copies, range, capacity: prof.capacity, invert: store.effectiveInvert(prof), rotate: prof.rotate, outDir, outputFace: prof.outputFace, stackReversed: prof.stackReversed,
     });
     for (const b of plan.batches) { allowedPdfs.add(b.fronts); if (b.backs) allowedPdfs.add(b.backs); }
     return { ...plan, secPerSheet: prof.secPerSheet };
