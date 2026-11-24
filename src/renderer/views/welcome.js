@@ -1,5 +1,5 @@
 // Primer inicio: elegir guía por voz y sonidos, y luego el tour.
-import { h, icon, clear } from '../ui.js';
+import { h, icon, clear, replayButton } from '../ui.js';
 import { say, play, configure, stopVoice } from '../audio.js';
 import { MARK } from '../brand.js';
 
@@ -48,6 +48,7 @@ export function mountWelcome(root, app) {
       h('span.welcome-mark', { html: MARK }),
       h('h1', 'Te damos la bienvenida a Duplex Assistant'),
       h('p.lead', 'Imprime por los dos lados de la hoja aunque tu impresora no lo haga sola: la app ordena las páginas y te avisa cuándo dar vuelta el mazo.'),
+      h('div.welcome-replay', replayButton('bienvenida', { label: 'Repetir el saludo' })),
       h('div.opts', voiceCard, soundCard),
       h('p.hint', 'Puedes cambiar esto cuando quieras con los botones Voz y Sonidos, arriba a la derecha.'),
       h('div.stage-actions.center',

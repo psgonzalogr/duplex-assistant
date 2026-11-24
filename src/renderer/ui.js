@@ -1,4 +1,5 @@
 // Pequeñas utilidades de interfaz sin framework.
+import { say } from './audio.js';
 import printer from 'lucide-static/icons/printer.svg?raw';
 import fileText from 'lucide-static/icons/file-text.svg?raw';
 import fileSheet from 'lucide-static/icons/file-spreadsheet.svg?raw';
@@ -137,3 +138,15 @@ export function folderName(dir) {
   const parts = dir.split(/[\\/]/).filter(Boolean);
   return parts.slice(-2).join(' › ');
 }
+
+/**
+ * Botón «Repetir audio»: vuelve a decir la frase del paso. Suena aunque la voz esté apagada,
+ * porque la persona lo pidió. voice: id de la frase o función que lo entrega (puede cambiar en el paso).
+ */
+export function replayButton(voice, { label = 'Repetir audio' } = {}) {
+  return h('button.btn.ghost.sm.replay', {
+    title: 'Volver a escuchar las instrucciones de este paso',
+    onclick: (e) => { e.stopPropagation(); const id = typeof voice === 'function' ? voice() : voice; if (id) say(id, { force: true }); },
+  }, icon('volumeOn', 'sm'), label);
+}
+

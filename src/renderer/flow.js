@@ -1,5 +1,5 @@
 // Armazón común de los asistentes: lista de pasos + escenario con «Ahora…», animación y progreso.
-import { h, icon, clear, badge } from './ui.js';
+import { h, icon, clear, badge, replayButton } from './ui.js';
 import { say, play, stopVoice } from './audio.js';
 
 const CHIP_SOUND = { act: 'aviso', wait: 'paso', done: 'logro' };
@@ -82,7 +82,8 @@ export class Flow {
     }
     const chip = CHIP[cfg.chip || 'act'];
     if (cfg.sound !== false) play(cfg.sound || CHIP_SOUND[cfg.chip || 'act']);
-    say(cfg.voice);
+    let voiceId = cfg.voice || null; // la frase del paso; un aviso posterior (p. ej. «tardando») la reemplaza
+    say(voiceId);
     const actionsEl = h('div.stage-actions');
     let resolveAction;
     const waiting = new Promise((r) => { resolveAction = r; });
@@ -102,7 +103,9 @@ export class Flow {
     const lead = typeof cfg.lead === 'string' ? h('p.lead', { html: cfg.lead }) : cfg.lead ? h('div.lead', cfg.lead) : null;
 
     clear(this.main,
-      h('span.now-chip', { class: chip.cls, role: 'status' }, cfg.chip === 'wait' ? h('span.pulse') : icon(chip.ic, 'sm'), cfg.chipText || chip.text),
+      h('div.stage-top',
+        h('span.now-chip', { class: chip.cls, role: 'status' }, cfg.chip === 'wait' ? h('span.pulse') : icon(chip.ic, 'sm'), cfg.chipText || chip.text),
+        voiceId ? replayButton(() => voiceId) : null),
       h('h1', cfg.title),
       lead,
       cfg.scene || null,
@@ -126,6 +129,7 @@ export class Flow {
       },
       setNote: (node) => clear(noteSlot, node),
       aborted: () => this.aborted,
+      say: (id) => { voiceId = id; say(id); },
       addAction: (a) => {
         const b = h('button.btn', { class: a.ghost ? 'ghost' : '', onclick: () => resolveAction(a.key) }, a.icon ? icon(a.icon) : null, a.label);
         actionsEl.append(b);
@@ -171,7 +175,7 @@ export async function printPhase(api, ctl, { file, printer, sheets, secPerSheet,
     if (!warned && elapsed > est * 1.7 + 20 && inQueue) {
       warned = true;
       play('aviso');
-      say('run-lento');
+      ctl.say ? ctl.say('run-lento') : say('run-lento');
       ctl.setNote(h('div.note.warn', icon('alert'), h('div', h('strong', 'Está tardando más de lo normal'),
         h('p', 'Revisa que la impresora esté encendida, tenga papel y no muestre un error. Cuando todas las hojas hayan salido, aprieta «Ya salieron todas».'))));
     }

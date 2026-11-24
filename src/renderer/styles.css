@@ -557,7 +557,7 @@ h1, h2, h3 { color: var(--texto); margin: 0; font-family: var(--font-display); l
 .tour-card h3 { font-size: 19px; font-weight: 600; padding-right: 30px; }
 .tour-card p { margin: 0; color: var(--lead); font-size: 15px; line-height: 1.5; }
 .tour-count { font-size: 12.5px; font-weight: 700; color: var(--rojo-texto); }
-.tour-actions { display: flex; justify-content: space-between; margin-top: 8px; }
+.tour-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 8px; }
 .tour-exit { position: absolute; right: 10px; top: 10px; width: 34px; height: 34px; }
 
 /* Aceptar el riesgo */
@@ -645,4 +645,11 @@ dialog.feedback .hint { margin: 14px 0 0; font-size: 13px; color: var(--apagado)
 .fb-mail { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; background: var(--pozo); border: 1px solid var(--linea); color: var(--rojo-texto); }
 .fb-addr { font-size: 19px; font-weight: 600; color: var(--texto); user-select: all; }
 .fb-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+/* Repetir audio del paso */
+.stage-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.stage-top .now-chip { align-self: center; }
+.btn.replay { height: 34px; padding: 0 12px; font-size: 13.5px; gap: 7px; }
+.tour-actions .tour-gap { flex: 1; }
+.welcome-replay { display: flex; justify-content: center; margin-top: -6px; }
 

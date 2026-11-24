@@ -1,5 +1,5 @@
 // Tour guiado: un foco sobre cada parte de la interfaz, con su explicación y la voz.
-import { h, icon } from './ui.js';
+import { h, icon, replayButton } from './ui.js';
 import { say, play, stopVoice } from './audio.js';
 
 export const TOUR = [
@@ -33,9 +33,10 @@ export function startTour({ onEnd, startAt = 0 } = {}) {
   const text = h('p');
   const back = h('button.btn.ghost.sm', { onclick: () => go(i - 1) }, icon('chevronLeft', 'sm'), 'Atrás');
   const next = h('button.btn.primary.sm', { onclick: () => go(i + 1) });
+  const replay = replayButton(() => TOUR[i].voice, { label: 'Repetir' });
   const exit = h('button.btn.ghost.icon-only.sm.tour-exit', { 'aria-label': 'Salir del recorrido', title: 'Salir del recorrido', onclick: () => end(false) }, icon('x', 'sm'));
   const card = h('div.tour-card', { role: 'dialog', 'aria-modal': 'true', 'aria-live': 'polite' },
-    exit, counter, title, text, h('div.tour-actions', back, next));
+    exit, counter, title, text, h('div.tour-actions', replay, h('span.tour-gap'), back, next));
   const root = h('div.tour', h('div.tour-block'), spot, card);
   document.body.append(root);
 
