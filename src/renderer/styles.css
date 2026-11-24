@@ -179,8 +179,12 @@ main { min-height: 0; position: relative; }
 .btn.primary:hover { background: var(--grad-rojo-hover); }
 .btn.big { height: 56px; font-size: 16px; padding: 0 28px; }
 .btn.block { width: 100%; }
-.btn.ghost { border-color: transparent; background: transparent; color: var(--texto-suave); }
-.btn.ghost:hover { background: var(--pizarra-alta); border-color: transparent; }
+/* Secundario: contorno visible para que se lea como botón, sin competir con el primario */
+.btn.ghost { border-color: var(--linea-fuerte); background: transparent; color: var(--texto-suave); }
+.btn.ghost:hover { background: var(--pizarra-alta); border-color: var(--borde-control); color: var(--texto); }
+/* Las «×» de cerrar se entienden solas: sin contorno */
+.btn.ghost.icon-only { border-color: transparent; }
+.btn.ghost.icon-only:hover { border-color: transparent; }
 .btn.icon-only { width: 44px; height: 44px; padding: 0; }
 .btn.sm { height: 38px; padding: 0 14px; font-size: 14px; border-width: 1.5px; border-radius: 11px; }
 

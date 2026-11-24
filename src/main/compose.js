@@ -137,6 +137,7 @@ async function buildJob(pdfPath, opts) {
     out.push({
       index: b + 1,
       sheets: batch.length,
+      blankBacks: batch.filter((s) => s.back === null).length, // hojas que pasan sin imprimir atrás
       fronts,
       backs,
       firstCopy: batch[0].copy,
@@ -150,6 +151,7 @@ async function buildJob(pdfPath, opts) {
     totalSheets: sheets.length,
     copies,
     blanksPerCopy: pages.length % 2,
+    lastPage: pages[pages.length - 1] + 1, // número (1-based) de la última página de cada copia
     batches: out,
   };
 }

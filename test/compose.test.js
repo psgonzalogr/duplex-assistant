@@ -49,12 +49,16 @@ test('buildJob genera frentes y reversos con las páginas correctas', async () =
   assert.equal(f.getPageCount(), 6);
   assert.equal(b.getPageCount(), 6);
   assert.equal(b.getPage(0).getRotation().angle, 180);
+  // 3 páginas: la hoja de la pág. 3 de cada copia pasa sin reverso (lo avisa la pantalla de reversos)
+  assert.equal(job.lastPage, 3);
+  assert.equal(job.batches[0].blankBacks, 3);
 });
 
 test('lotes por capacidad de bandeja', async () => {
   const pdf = await samplePdf(4);
   const job = await c.buildJob(pdf, { copies: 5, capacity: 4, invert: false, outDir: path.join(path.dirname(pdf), 'o2') });
   assert.deepEqual(job.batches.map((x) => x.sheets), [4, 4, 2]);
+  assert.deepEqual(job.batches.map((x) => x.blankBacks), [0, 0, 0]);
 });
 
 test('orden de reversos según el movimiento del mazo', () => {

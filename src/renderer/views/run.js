@@ -88,6 +88,7 @@ export async function runPrint(root, app, job) {
         title: `Toma las ${b.sheets} hojas y ponlas de nuevo en la bandeja`,
         lead: 'Sigue los 3 pasos de la animación, sin cambiar el orden de las hojas.',
         scene: paperGuide(profile, { sheets: b.sheets }),
+        note: b.blankBacks ? blankBacksNote(b.blankBacks, plan.lastPage, true) : undefined,
         actions: [
           { key: 'go', label: 'Ya las puse · imprimir reversos', primary: true, icon: 'printer' },
           { key: 'redo', label: 'Se atascó: repetir los frentes', icon: 'refresh', ghost: true },
@@ -106,6 +107,7 @@ export async function runPrint(root, app, job) {
         scene: scene('print'),
         progress: true,
       });
+      if (b.blankBacks) ctl.setNote(blankBacksNote(b.blankBacks, plan.lastPage));
       const ok2 = await safePhase(flow, () => printPhase(api, ctl, { file: b.backs, printer, sheets: b.sheets, secPerSheet: plan.secPerSheet, label: 'Reversos' }));
       if (!ok2) return app.go('home');
     }
@@ -149,4 +151,18 @@ async function safePhase(flow, fn) {
       if ((await ctl.wait()) === 'cancel') return false;
     }
   }
+}
+
+/**
+ * Aviso para documentos impares: la hoja de la última página no tiene reverso, pero igual vuelve a
+ * pasar por la impresora (sacarla descuadraría las copias). Sin aviso parece una falla.
+ * before = true: se muestra al dar vuelta el mazo; false: mientras salen los reversos.
+ */
+function blankBacksNote(count, lastPage, before) {
+  const cuales = count === 1 ? `La hoja de la <b>página ${lastPage}</b>` : `Las ${count} hojas de la <b>página ${lastPage}</b> (una por copia)`;
+  const verbo = count === 1 ? 'sale' : 'salen';
+  const text = before
+    ? `${cuales} no ${count === 1 ? 'tiene' : 'tienen'} reverso: ${count === 1 ? 'pasará' : 'pasarán'} por la impresora y ${count === 1 ? 'saldrá' : 'saldrán'} sin nada atrás. Déja${count === 1 ? 'la' : 'las'} en el mazo igual, así las copias no se desordenan.`
+    : `Es normal: ${cuales.charAt(0).toLowerCase() + cuales.slice(1)} ${verbo} sin imprimir atrás porque el documento tiene páginas impares.`;
+  return h('div.note.info', icon('info'), h('p', { html: text }));
 }
