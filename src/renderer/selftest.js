@@ -132,6 +132,10 @@ export async function selftest(app, samplePath) {
     document.querySelector('.guide')?.scrollIntoView({ block: 'center' });
     await wait(2600);
     await T.capture(`${tag}-17-impresora-guia`);
+    await until(() => document.querySelector('.cups-grid'), 15000).catch(() => null);
+    document.querySelector('.cups-grid')?.scrollIntoView({ block: 'center' });
+    await wait(700);
+    await T.capture(`${tag}-17b-opciones`);
 
     // Advertencia al saltar la calibración
     app.go('calibrate', { returnTo: 'home', skipFirst: true });

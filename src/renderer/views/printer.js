@@ -2,6 +2,7 @@
 import { h, icon, clear, toast } from '../ui.js';
 import { paperGuide, faceWord, isTop } from '../scenes.js';
 import { saveFeed } from './calibrate.js';
+import { optionLabel, choiceLabel, optionHint, optionRecommended } from '../cups-es.js';
 
 const OUTPUTS = [
   ['', 'No lo sé todavía (se pregunta al imprimir)'],
@@ -148,21 +149,38 @@ export function mountPrinter(root, app) {
     let res;
     try { res = await api.printerOptions(S.printer); } catch (e) { res = { options: [], error: e.message }; }
     const grid = h('div.cups-grid');
+    const selects = new Map();
+    const save = async (key, value) => {
+      const cups = { ...S.profile.cups, [key]: value || undefined };
+      if (!value) delete cups[key];
+      S.profile = await api.updatePrinter(S.printer, { cups });
+    };
     for (const o of res.options) {
+      const label = optionLabel(o.key, o.label);
+      const rec = optionRecommended(o.key);
+      const hint = optionHint(o.key);
       const cur = prof.cups[o.key] || '';
+      const text = (c) => `${choiceLabel(o.key, c)}${c === rec ? ' · recomendado' : ''}`;
       const sel = h('select.field', {
-        onchange: async () => {
-          const cups = { ...S.profile.cups, [o.key]: sel.value || undefined };
-          if (!sel.value) delete cups[o.key];
-          S.profile = await api.updatePrinter(S.printer, { cups });
-          toast(`${o.label}: guardado.`);
-        },
-      }, h('option', { value: '' }, `Predeterminado (${o.default ?? '—'})`), o.choices.map((c) => h('option', { value: c, selected: cur === c }, c)));
-      grid.append(h('div', h('label.label', o.label), sel));
+        'aria-label': label,
+        onchange: async () => { await save(o.key, sel.value); toast(`${label}: guardado.`); },
+      }, h('option', { value: '' }, `Predeterminado (${choiceLabel(o.key, o.default)})`), o.choices.map((c) => h('option', { value: c, selected: cur === c }, text(c))));
+      selects.set(o.key, sel);
+      grid.append(h('div', { class: rec ? 'has-rec' : '' }, h('label.label', label), sel, hint ? h('p.hint', hint) : null));
     }
+    // Lo recomendado para doble cara manual (solo opciones que este driver tiene)
+    const recs = res.options.filter((o) => optionRecommended(o.key) && o.choices.includes(optionRecommended(o.key)));
+    const recBtn = recs.length
+      ? h('button.btn.ghost.sm', {
+        onclick: async () => {
+          for (const o of recs) { const v = optionRecommended(o.key); await save(o.key, v); selects.get(o.key).value = v; }
+          toast(`Listo: ${recs.map((o) => optionLabel(o.key, o.label).toLowerCase()).join(' y ')}.`);
+        },
+      }, icon('sparkles', 'sm'), 'Usar lo recomendado para doble cara manual')
+      : null;
     clear(card, h('h3', h('span.ib', icon('sliders')), 'Opciones de la impresora (CUPS)'),
       res.options.length
-        ? [h('p.hint', { style: { margin: 0 } }, 'Se aplican solo cuando imprimes con Duplex Assistant. La impresión a 2 caras la maneja esta app, por eso no aparece aquí.'), grid]
+        ? [h('p.hint', { style: { margin: 0 } }, 'Se aplican solo cuando imprimes con Duplex Assistant. La impresión a 2 caras la maneja esta app, por eso no aparece aquí.'), recBtn ? h('div', recBtn) : null, grid]
         : h('div.note.warn', icon('alert'), h('p', res.error || 'CUPS no informó opciones para esta impresora. Se usará su configuración predeterminada.')));
   }
 

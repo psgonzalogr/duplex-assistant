@@ -1,0 +1,79 @@
+{
+  "_info": "Nombres en español de las opciones de impresora (CUPS/PPD). Las usa la pantalla Impresora y scripts/ppd-es.mjs, que genera un PPD con estas etiquetas para que también salgan en español en los demás programas. Las claves son las palabras internas del driver: no cambian.",
+  "common": {
+    "ON": "Sí", "On": "Sí", "OFF": "No", "Off": "No", "True": "Sí", "False": "No",
+    "LOW": "Baja", "HIGH": "Alta", "Auto": "Automático", "None": "Ninguno"
+  },
+  "groups": {
+    "General": "General",
+    "Print Settings (Advanced)": "Ajustes de impresión (avanzado)",
+    "Color Settings (Advanced)": "Ajustes de color (avanzado)"
+  },
+  "pageSizes": {
+    "Letter": "Carta", "Legal": "Oficio (Legal)", "Executive": "Ejecutivo", "Folio": "Folio",
+    "A4": "A4", "A5": "A5", "A6": "A6", "B5": "B5", "B6": "B6",
+    "BrA4_B": "A4 sin bordes", "BrLetter_B": "Carta sin bordes", "BrA6_B": "A6 sin bordes",
+    "BrPostC4x6_S": "10 × 15 cm (4 × 6 pulg.)", "BrPostC4x6_B": "10 × 15 cm (4 × 6 pulg.) sin bordes",
+    "BrIndexC5x8_S": "Ficha 13 × 20 cm (5 × 8 pulg.)", "BrIndexC5x8_B": "Ficha 13 × 20 cm (5 × 8 pulg.) sin bordes",
+    "BrPhotoL_S": "Foto L (89 × 127 mm)", "BrPhotoL_B": "Foto L (89 × 127 mm) sin bordes",
+    "BrPhoto2L_S": "Foto 2L (127 × 178 mm)", "BrPhoto2L_B": "Foto 2L (127 × 178 mm) sin bordes",
+    "Postcard": "Postal (100 × 148 mm)", "BrHagaki_B": "Postal (100 × 148 mm) sin bordes",
+    "DoublePostcardRotated": "Postal doble (148 × 200 mm)",
+    "EnvDL": "Sobre DL", "EnvC5": "Sobre C5", "Env10": "Sobre n.º 10", "EnvMonarch": "Sobre Monarch",
+    "EnvYou4": "Sobre You 4", "EnvYou2": "Sobre You 2", "EnvChou3": "Sobre Chou 3", "EnvChou4": "Sobre Chou 4",
+    "195x270mm": "195 × 270 mm", "IndiaLegal": "Oficio de India", "MexicanLegal": "Oficio de México",
+    "215x345mm": "Oficio (215 × 345 mm)", "Oficio": "Oficio",
+    "3.5x5": "9 × 13 cm (3,5 × 5 pulg.)", "4x6": "10 × 15 cm (4 × 6 pulg.)", "5x7": "13 × 18 cm (5 × 7 pulg.)", "5x8": "13 × 20 cm (5 × 8 pulg.)",
+    "FanFoldGermanLegal": "Folio alemán continuo",
+    "Custom.WIDTHxHEIGHT": "Personalizado"
+  },
+  "options": {
+    "PageSize": { "label": "Tamaño del papel", "choices": "pageSizes" },
+    "PageRegion": { "label": "Región de la página", "choices": "pageSizes" },
+    "InputSlot": { "label": "Bandeja de entrada", "choices": { "Auto": "Automática", "Main": "Principal" } },
+    "OutputBin": { "label": "Bandeja de salida", "choices": { "FaceUp": "Boca arriba", "FaceDown": "Boca abajo" } },
+    "ColorModel": { "label": "Modo de color", "choices": { "RGB": "Color", "Gray": "Escala de grises" } },
+    "cupsPrintQuality": { "label": "Calidad de impresión", "choices": { "Draft": "Borrador", "Normal": "Normal", "High": "Alta" } },
+    "MediaType": { "label": "Tipo de papel", "choices": { "Stationery": "Papel normal", "StationeryInkjet": "Papel para inyección de tinta", "PhotographicGlossy": "Papel fotográfico brillante", "Com.brother.bp71": "Papel fotográfico Brother BP71" } },
+
+    "BRResolution": { "label": "Calidad de impresión", "choices": { "PlainFast": "Papel normal · rápida", "PlainNormal": "Papel normal · normal", "Fast": "Rápida", "Normal": "Normal", "High": "Alta", "Best": "Óptima" } },
+    "BRMonoColor": { "label": "Color o escala de grises", "choices": { "Color": "Color", "Mono": "Escala de grises" } },
+    "BRSlowDrying": {
+      "label": "Papel de secado lento",
+      "recommended": "ON",
+      "hint": "Da más tiempo para que seque la tinta: las hojas no se pegan al volver a pasarlas. Recomendado para doble cara manual."
+    },
+    "BRMediaType": {
+      "label": "Tipo de papel",
+      "hint": "«Papel normal (doble cara)» está pensado para imprimir por los dos lados; pruébalo si la tinta se transparenta.",
+      "choices": {
+        "PlainDuplex": "Papel normal (doble cara)", "Plain": "Papel normal", "Inkjet": "Papel para inyección de tinta",
+        "BrotherGlossyR": "Papel fotográfico Brother BP71", "BrotherBP60Matte": "Papel mate Brother BP60", "Glossy": "Otro papel fotográfico",
+        "InkjetHagakiAtena": "Postal japonesa de inyección (dirección)", "InkjetHagakiUra": "Postal japonesa de inyección (reverso)",
+        "GlossyHagakiUra": "Postal japonesa brillante (reverso)", "GlossyHagakiAtena": "Postal japonesa brillante (dirección)",
+        "PlainHagakiUra": "Postal japonesa normal (reverso)", "PlainHagakiAtena": "Postal japonesa normal (dirección)"
+      }
+    },
+    "BRColorPaperThick": { "label": "Grosor del papel", "hint": "Si la impresora toma 2 hojas juntas con papel grueso, prueba «Grueso».", "choices": { "Regular": "Normal", "Thick": "Grueso", "Env": "Sobre" } },
+    "BRBiDir": { "label": "Impresión bidireccional", "choices": { "ON": "Sí (más rápida)", "OFF": "No (más precisa)" } },
+    "BRColorMatching": { "label": "Modo de color", "choices": { "Natural": "Natural", "Vivid": "Intenso", "None": "Sin ajuste" } },
+    "BRJpeg": { "label": "Modo de envío de datos", "choices": { "Recommended": "Recomendado", "QualityPrior": "Mejor calidad", "SpeedPrior": "Más rápido" } },
+    "BRHalfTonePattern": { "label": "Patrón de semitonos", "choices": { "Diffusion": "Difusión", "Dither": "Tramado" } },
+    "BRColorEnhancement": { "label": "Mejora del color" },
+    "BRBrightness": { "label": "Brillo" },
+    "BRContrast": { "label": "Contraste" },
+    "BRRed": { "label": "Rojo" },
+    "BRGreen": { "label": "Verde" },
+    "BRBlue": { "label": "Azul" },
+    "BRReduceSmudgeDx": {
+      "label": "Reducir manchas · doble cara automática",
+      "hint": "Solo para impresoras que imprimen solas por los dos lados. Duplex Assistant usa la opción de una cara."
+    },
+    "BRReduceSmudgeSx": {
+      "label": "Reducir manchas · una cara",
+      "recommended": "LOW",
+      "hint": "Duplex Assistant imprime cada pasada a una cara, así que esta es la que sirve. «Alta» mancha menos pero imprime más lento."
+    },
+    "BRReduceSmudgeGP": { "label": "Reducir manchas · papel brillante" }
+  }
+}
