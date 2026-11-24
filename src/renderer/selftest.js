@@ -30,6 +30,27 @@ export async function selftest(app, samplePath) {
     printerProfile: async (n) => (fakeProfile ||= { ...(await real.printerProfile(n)), calibrated: true, secPerSheet: 9 }),
     updatePrinter: async (_n, patch) => (fakeProfile = { ...fakeProfile, ...patch }),
   };
+  // Documentos de ejemplo: las capturas son públicas y no deben mostrar archivos reales del equipo.
+  const name0 = samplePath.split(/[\\/]/).pop();
+  const dir0 = samplePath.slice(0, -name0.length - 1);
+  const H = 3600e3, D = 24 * H, now = Date.now();
+  const FIX = [
+    [name0, dir0, 'pdf', 0.4 * H],
+    ['Contrato de arriendo.docx', 'Documentos/Casa', 'word', 2 * H],
+    ['Presupuesto familiar 2026.xlsx', 'Documentos/Finanzas', 'excel', 5 * H],
+    ['Reunión de apoderados.pptx', 'Escritorio/Colegio', 'powerpoint', 1.5 * D],
+    ['Boleta de luz noviembre.pdf', 'Descargas', 'pdf', 2 * D],
+    ['Foto credencial.jpg', 'Imágenes', 'image', 3 * D],
+    ['Informe de práctica.docx', 'Documentos/Universidad', 'word', 9 * D],
+    ['Lista de útiles escolares.pdf', 'Descargas', 'pdf', 12 * D],
+    ['Recetas de la abuela.txt', 'Documentos', 'text', 20 * D],
+    ['Horario de clases.xlsx', 'Escritorio/Colegio', 'excel', 34 * D],
+    ['Manual de la impresora.pdf', 'Documentos/Manuales', 'pdf', 60 * D],
+    ['Certificado de alumno regular.pdf', 'Descargas', 'pdf', 75 * D],
+  ].map(([name, dir, kind, ago]) => ({ path: `${dir}/${name}`, name, dir, kind, size: 1, mtime: now - ago }));
+  FIX[0].path = samplePath;
+  app.rescan = async () => { app.S.files = FIX.slice(); app.S.scanning = false; app.current?.onFiles?.(); };
+
   app.S.printer ||= 'Impresora de prueba';
   app.S.printers = app.S.printers.length ? app.S.printers : [{ name: 'Impresora de prueba', displayName: 'Impresora de prueba' }];
   const sizes = [[1320, 840], [1040, 680]];
@@ -44,13 +65,13 @@ export async function selftest(app, samplePath) {
     await wait(2500);
     await T.capture(`${tag}-01-inicio`);
 
-    app.updater.show({ status: 'available', version: '1.1.0', notes: 'Actualizaciones automáticas desde GitHub.\nMejoras de diseño.' });
+    app.updater.show({ status: 'available', version: '1.2.0', notes: 'Actualizaciones automáticas desde GitHub.\nMejoras de diseño.' });
     await wait(500);
     await T.capture(`${tag}-12-actualizacion`);
-    app.updater.show({ status: 'downloading', version: '1.1.0', percent: 46, transferred: 58e6, total: 125e6 });
+    app.updater.show({ status: 'downloading', version: '1.2.0', percent: 46, transferred: 58e6, total: 125e6 });
     await wait(300);
     await T.capture(`${tag}-13-descargando`);
-    app.updater.show({ status: 'ready', version: '1.1.0' });
+    app.updater.show({ status: 'ready', version: '1.2.0' });
     await wait(300);
     await T.capture(`${tag}-14-lista`);
     document.querySelector('.uc-close')?.click();

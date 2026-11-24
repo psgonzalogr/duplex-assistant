@@ -23,7 +23,8 @@ titles.forEach((t, i) => {
   }
   p.drawText(`${i + 1}`, { x: 300, y: 40, size: 12, font: reg });
 });
-const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'da-selftest-'));
+const dir = path.join(await fs.mkdtemp(path.join(os.tmpdir(), 'da-selftest-')), 'Documentos', 'Colegio');
+await fs.mkdir(dir, { recursive: true });
 const sample = path.join(dir, 'Guía de ejercicios.pdf');
 await fs.writeFile(sample, await doc.save());
 
