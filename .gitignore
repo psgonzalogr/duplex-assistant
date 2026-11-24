@@ -1,0 +1,7 @@
+node_modules/
+dist/
+release/
+selftest-out/
+selftest-pack/
+vendor/win/*.exe
+*.log

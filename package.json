@@ -1,0 +1,108 @@
+{
+  "name": "duplex-assistant",
+  "productName": "Duplex Assistant",
+  "version": "1.0.0",
+  "description": "Imprime a doble cara en impresoras sin dúplex automático. Desarrollado por SafeTech.",
+  "author": {
+    "name": "SafeTech",
+    "url": "https://safe-tech.cl"
+  },
+  "homepage": "https://github.com/psgonzalogr/duplex-assistant",
+  "license": "MIT",
+  "main": "src/main/main.js",
+  "scripts": {
+    "dev": "vite build && electron .",
+    "build:renderer": "vite build",
+    "vendor": "node scripts/vendor.mjs",
+    "test": "node --test test/",
+    "selftest": "vite build && node scripts/selftest.mjs",
+    "dist:win": "npm run vendor && vite build && electron-builder --win --publish never",
+    "dist:linux": "npm run vendor && vite build && electron-builder --linux --publish never"
+  },
+  "build": {
+    "appId": "cl.safetech.duplexassistant",
+    "productName": "Duplex Assistant",
+    "artifactName": "Duplex-Assistant-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/main/**",
+      "dist/renderer/**",
+      "assets/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "vendor/${os}",
+        "to": "vendor",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "Duplex-Assistant-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Duplex Assistant",
+      "deleteAppDataOnUninstall": false
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "Office",
+      "executableArgs": [
+        "--no-sandbox"
+      ],
+      "artifactName": "Duplex-Assistant-${version}-x86_64.${ext}",
+      "desktop": {
+        "entry": {
+          "Name": "Duplex Assistant",
+          "Comment": "Imprime a doble cara en impresoras sin dúplex automático",
+          "Keywords": "imprimir;doble cara;duplex;impresora;"
+        }
+      }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "psgonzalogr",
+        "repo": "duplex-assistant"
+      }
+    ]
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
+  },
+  "devDependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0",
+    "lucide-static": "^1.78.0",
+    "pdf-to-printer": "^5.8.1",
+    "pdfjs-dist": "^6.5.438",
+    "vite": "^8.3.8"
+  }
+}
