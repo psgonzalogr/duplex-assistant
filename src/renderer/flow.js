@@ -1,6 +1,6 @@
 // Armazón común de los asistentes: lista de pasos + escenario con «Ahora…», animación y progreso.
 import { h, icon, clear, badge } from './ui.js';
-import { say, play } from './audio.js';
+import { say, play, stopVoice } from './audio.js';
 
 const CHIP_SOUND = { act: 'aviso', wait: 'paso', done: 'logro' };
 
@@ -14,9 +14,11 @@ export class Flow {
   /**
    * doc: { name, kind, sub }
    * steps: [{ id, label, group? }]
+   * exit: { label, onExit } → botón para salir del asistente en cualquier paso
    */
-  constructor(root, { doc, steps, sideNote }) {
+  constructor(root, { doc, steps, sideNote, exit }) {
     this.steps = steps;
+    this.aborted = false;
     this.stepEls = new Map();
     this.totalFill = h('div.fill');
     this.totalText = h('span');
@@ -37,6 +39,7 @@ export class Flow {
         h('div.flow-doc', doc.kind === 'printer' ? h('span.badge.printer', icon('printer')) : badge(doc.kind), h('div.t', h('b', doc.name), h('span', doc.sub))),
         list,
         sideNote || null,
+        exit ? h('button.btn.ghost.sm.flow-exit', { onclick: () => { this.abort(); exit.onExit(); } }, icon('arrowLeft', 'sm'), exit.label) : null,
         h('div.bar-total.progress',
           h('div.progress-meta', h('span', 'Avance total'), this.totalText),
           h('div.track.thin', this.totalFill))),
@@ -44,7 +47,14 @@ export class Flow {
     clear(root, this.el);
   }
 
+  /** Sale del asistente: corta la voz y deja inertes los pasos que el código todavía tenga pendientes. */
+  abort() {
+    this.aborted = true;
+    stopVoice();
+  }
+
   mark(id) {
+    if (this.aborted) return;
     const idx = this.steps.findIndex((s) => s.id === id);
     this.steps.forEach((s, i) => {
       const el = this.stepEls.get(s.id);
@@ -65,6 +75,11 @@ export class Flow {
    *        voice: id de la frase grabada, sound: nombre del sonido (false = ninguno) }
    */
   stage(cfg) {
+    if (this.aborted) {
+      // Tras salir: nada suena ni se dibuja y la espera no termina nunca (el asistente queda detenido).
+      const inert = h('div');
+      return { wait: () => new Promise(() => {}), resolve() {}, setProgress() {}, setNote() {}, addAction: () => h('button'), actionsEl: inert, aborted: () => true };
+    }
     const chip = CHIP[cfg.chip || 'act'];
     if (cfg.sound !== false) play(cfg.sound || CHIP_SOUND[cfg.chip || 'act']);
     say(cfg.voice);
@@ -110,6 +125,7 @@ export class Flow {
         metaR.innerHTML = right;
       },
       setNote: (node) => clear(noteSlot, node),
+      aborted: () => this.aborted,
       addAction: (a) => {
         const b = h('button.btn', { class: a.ghost ? 'ghost' : '', onclick: () => resolveAction(a.key) }, a.icon ? icon(a.icon) : null, a.label);
         actionsEl.append(b);
@@ -138,7 +154,7 @@ export async function printPhase(api, ctl, { file, printer, sheets, secPerSheet,
   const skipBtn = ctl.addAction({ key: 'skip', label: 'Ya salieron todas', icon: 'check', ghost: true });
   const skipP = ctl.wait().then((k) => { if (k === 'skip') skipped = true; });
 
-  while (!skipped) {
+  while (!skipped && !ctl.aborted?.()) {
     const elapsed = (performance.now() - t0) / 1000;
     let q = [];
     try { q = await api.queue(printer); } catch { /* sin datos de cola */ }
@@ -164,6 +180,7 @@ export async function printPhase(api, ctl, { file, printer, sheets, secPerSheet,
     await Promise.race([sleep(1500), skipP]);
   }
   skipBtn.remove();
+  if (ctl.aborted?.()) return 'aborted'; // se salió del asistente: sin sonido ni velocidad medida a medias
   const elapsed = (performance.now() - t0) / 1000;
   ctl.setProgress(1, `${label} · <b>${sheets}</b> de ${sheets}`, 'listo', true);
   play('exito');

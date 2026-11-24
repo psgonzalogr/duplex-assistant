@@ -362,6 +362,7 @@ h1, h2, h3 { color: var(--texto); margin: 0; font-family: var(--font-display); l
 .step.done .n { border: 0; background: var(--verde); color: #fff; }
 .step.done .lbl { color: var(--texto-suave); }
 .flow-side .bar-total { margin-top: auto; }
+.flow-exit { align-self: flex-start; margin: -6px 0 0 6px; }
 
 .flow-main { overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: safe center; padding: 26px 40px; }
 .stage { width: min(860px, 100%); display: flex; flex-direction: column; gap: 22px; }

@@ -212,6 +212,18 @@ export async function selftest(app, samplePath) {
     await wait(1200);
     await T.capture(`${tag}-11-calibrada`);
 
+    // Salir de la calibración a mitad de camino: vuelve a donde estaba
+    app.go('calibrate', { returnTo: 'printer' });
+    await until(() => document.querySelector('.feed-choices'));
+    document.querySelectorAll('.feed-choices .choice')[0].click();
+    await until(() => document.querySelector('.stage h1')?.textContent.includes('Enseñémosle'));
+    await wait(800);
+    await T.capture(`${tag}-26-calibrar-salir`);
+    document.querySelector('.flow-exit').click();
+    await until(() => document.querySelector('h1')?.textContent.includes('Impresora'));
+    await wait(600);
+    await T.capture(`${tag}-26b-salio`);
+
     // Impresora con alimentador de arriba: calibración e instrucciones para dar vuelta el mazo
     app.go('calibrate', { returnTo: 'home' });
     await until(() => document.querySelector('.feed-choices'));

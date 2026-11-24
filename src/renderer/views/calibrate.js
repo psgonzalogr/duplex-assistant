@@ -104,7 +104,11 @@ export async function runCalibration(root, app) {
     { id: 'look', label: 'Contar qué salió' },
     { id: 'end', label: 'Listo' },
   ];
-  const flow = new Flow(root, { doc, steps });
+  const flow = new Flow(root, {
+    doc, steps,
+    // Se puede salir en cualquier paso; lo ya medido (tipo de impresora, salida) queda guardado.
+    exit: { label: 'Salir de la calibración', onExit: () => app.go(app.S.returnTo || 'home', { keepSelection: true }) },
+  });
 
   // Desde «Imprimir sin calibrar…»: primero la advertencia; si elige calibrar, sigue la calibración.
   if (app.S.calSkipFirst) {
