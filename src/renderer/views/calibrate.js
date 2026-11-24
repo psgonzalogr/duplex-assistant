@@ -126,7 +126,11 @@ export async function runCalibration(root, app) {
       continue;
     }
     const map = { ok: [false, false], swapped: [true, false], upside: [false, true], both: [true, true] }[picked];
-    profile = await api.updatePrinter(printer, { calibrated: true, invert: map[0], rotate: map[1] });
+    // Los reversos de prueba salen sin invertir: map[0] dice si hacía falta invertirlos con el movimiento
+    // que se hizo. Si eso contradice lo esperado para ese movimiento, se guarda como corrección.
+    const known = await api.printerProfile(printer);
+    const invertFix = known.outputFace ? map[0] !== known.keepsOrder : false;
+    profile = await api.updatePrinter(printer, { calibrated: true, invert: map[0], invertFix, rotate: map[1] });
     break;
   }
 

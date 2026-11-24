@@ -42,7 +42,7 @@ export function mountPrinter(root, app) {
         : h('div.note.warn', icon('alert'), h('p', 'Todavía no está calibrada. Usa 2 hojas de prueba y toma un minuto.')),
       h('dl.kv',
         h('dt', 'Mazo al darlo vuelta'), h('dd', prof.faceUp ? 'Cara impresa hacia arriba' : 'Cara impresa hacia abajo'),
-        h('dt', 'Orden de los reversos'), h('dd', prof.invert ? 'Invertido' : 'Normal'),
+        h('dt', 'Orden de los reversos'), h('dd', `${prof.effectiveInvert ? 'Invertido' : 'Normal'}${prof.outputFace ? (prof.invertFix ? ' (corregido por la calibración)' : ' (según el movimiento)') : ''}`),
         h('dt', 'Reversos girados 180°'), h('dd', prof.rotate ? 'Sí' : 'No'),
         h('dt', 'Velocidad medida'), h('dd', `~${prof.secPerSheet} s por cara`)),
       h('button.btn.primary', { onclick: () => app.go('calibrate', { returnTo: 'printer' }) }, icon('sparkles'), prof.calibrated ? 'Volver a calibrar' : 'Calibrar ahora'));

@@ -10,6 +10,7 @@ const DEFAULT_PRINTER = {
   rotate: false,
   faceUp: true,       // poner el mazo con la cara impresa hacia arriba
   outputFace: null,   // cómo salen las hojas: 'up-in' | 'up-out' | 'down' | null (no se sabe)
+  invertFix: false,   // la calibración vio que esta impresora hace lo contrario de lo esperado
   capacity: 100,      // hojas por pasada (bandeja)
   secPerSheet: 9,     // se aprende con cada impresión
   paper: 'auto',
@@ -44,4 +45,6 @@ function updatePrinter(name, patch) {
   return printer(name);
 }
 
-module.exports = { get, set, printer, updatePrinter, DEFAULT_PRINTER };
+const { keepsOrder, effectiveInvert } = require('./compose');
+
+module.exports = { get, set, printer, updatePrinter, keepsOrder, effectiveInvert, DEFAULT_PRINTER };

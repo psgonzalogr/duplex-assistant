@@ -57,6 +57,25 @@ test('lotes por capacidad de bandeja', async () => {
   assert.deepEqual(job.batches.map((x) => x.sheets), [4, 4, 2]);
 });
 
+test('orden de reversos según el movimiento del mazo', () => {
+  // Caso real (Brother DCP-T710W): sale con lo impreso a la vista y la flecha hacia uno; se gira sobre la mesa.
+  // La última hoja queda arriba y entra primero → hay que invertir (si no, detrás de la pág. 1 sale la 6).
+  const brother = { outputFace: 'up-out', faceUp: true, invert: false, invertFix: false };
+  assert.equal(c.effectiveInvert(brother), true);
+  assert.equal(c.effectiveInvert({ outputFace: 'up-in', faceUp: true }), true);    // solo trasladar
+  assert.equal(c.effectiveInvert({ outputFace: 'up-in', faceUp: false }), false);  // dar vuelta (libro)
+  assert.equal(c.effectiveInvert({ outputFace: 'down', faceUp: true }), false);    // dar vuelta (libro)
+  assert.equal(c.effectiveInvert({ outputFace: 'up-out', faceUp: false }), false); // dar vuelta (calendario)
+  assert.equal(c.effectiveInvert({ outputFace: 'down', faceUp: false }), true);    // solo trasladar
+  // La calibración puede corregir una impresora que se comporta distinto
+  assert.equal(c.effectiveInvert({ ...brother, invertFix: true }), false);
+  // Sin saber cómo salen las hojas, manda lo que dijo la calibración
+  assert.equal(c.effectiveInvert({ outputFace: null, invert: true }), true);
+  // Orden real enviado: 6 págs., 1 copia, invertido → la hoja 1 recibe la 2 al final del mazo de reversos
+  const s = c.planSheets([0, 1, 2, 3, 4, 5], 1);
+  assert.deepEqual(c.backOrder(s, true).map((i) => i + 1), [6, 4, 2]);
+});
+
 test('calibración', async () => {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'da-cal-'));
   const cal = await c.buildCalibration(dir);

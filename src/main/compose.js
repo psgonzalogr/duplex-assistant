@@ -206,6 +206,21 @@ function calibrationFromAnswer(answer) {
   }
 }
 
+/**
+ * ¿El movimiento que hace el usuario mantiene el orden del mazo?
+ * Al salir, la última hoja impresa queda arriba. Trasladar o girar sobre la mesa la deja arriba
+ * (y la bandeja toma primero la de arriba); dar vuelta el mazo (libro o calendario) deja arriba la primera.
+ */
+function keepsOrder(p) {
+  return (p.outputFace === 'up-in' && p.faceUp !== false) || (p.outputFace === 'up-out' && p.faceUp !== false) || (p.outputFace === 'down' && p.faceUp === false);
+}
+
+/** Si los reversos van en orden inverso. Sin saber cómo salen las hojas se usa lo que dijo la calibración. */
+function effectiveInvert(p) {
+  if (!p.outputFace) return !!p.invert;
+  return keepsOrder(p) !== !!p.invertFix;
+}
+
 async function pageCount(pdfPath) {
   const src = await loadSource(pdfPath);
   return src.getPageCount();
@@ -213,4 +228,5 @@ async function pageCount(pdfPath) {
 
 module.exports = {
   parseRange, planSheets, splitBatches, backOrder, buildJob, buildCalibration, calibrationFromAnswer, pageCount,
+  keepsOrder, effectiveInvert,
 };

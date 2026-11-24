@@ -94,7 +94,10 @@ function registerIpc() {
       .filter((p) => !/^(Microsoft Print to PDF|Microsoft XPS|OneNote|Fax|PDF24|AnyDesk|Nitro|Send To OneNote)/i.test(p.name))
       .map((p) => ({ name: p.name, displayName: p.displayName || p.name, isDefault: !!p.isDefault, status: p.status }));
   });
-  handle('printer:get', (name) => ({ ...store.printer(name), driverProfile: printing.hasProfile(name) }));
+  handle('printer:get', (name) => {
+    const p = store.printer(name);
+    return { ...p, effectiveInvert: store.effectiveInvert(p), keepsOrder: store.keepsOrder(p), driverProfile: printing.hasProfile(name) };
+  });
   handle('printer:update', (name, patch) => store.updatePrinter(name, patch));
   handle('printer:set-last', (name) => store.set('lastPrinter', name));
   handle('printer:options', (name) => printing.printerOptions(name));
@@ -138,7 +141,7 @@ function registerIpc() {
     const prof = store.printer(printer);
     const outDir = path.join(os.tmpdir(), 'duplex-assistant', 'trabajos', String(Date.now()));
     const plan = await compose.buildJob(pdfPath, {
-      copies, range, capacity: prof.capacity, invert: prof.invert, rotate: prof.rotate, outDir,
+      copies, range, capacity: prof.capacity, invert: store.effectiveInvert(prof), rotate: prof.rotate, outDir,
     });
     for (const b of plan.batches) { allowedPdfs.add(b.fronts); if (b.backs) allowedPdfs.add(b.backs); }
     return { ...plan, secPerSheet: prof.secPerSheet };
