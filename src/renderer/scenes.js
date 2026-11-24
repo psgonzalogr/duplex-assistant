@@ -22,6 +22,28 @@ function tray(label = 'Bandeja de papel') {
   return h('div.tray', h('span.tray-label', label));
 }
 
+// ---------- Tipo de alimentación ----------
+// 'bottom': cajón o bandeja abajo, hojas acostadas. 'top': alimentador atrás, arriba, hojas de pie.
+// Para el orden da lo mismo: el alimentador es la bandeja «de pie» (la hoja de adelante = la de arriba).
+
+export const isTop = (p) => p?.feed === 'top';
+
+/** «la bandeja» o «el alimentador», para los textos. */
+export function feedPlace(p) {
+  return isTop(p) ? 'el alimentador' : 'la bandeja';
+}
+
+/** Hacia dónde va lo impreso al poner el mazo. */
+export function faceWord(p, faceUp = p?.faceUp !== false) {
+  if (isTop(p)) return faceUp ? 'mirando hacia ti' : 'mirando hacia atrás';
+  return faceUp ? 'hacia arriba' : 'hacia abajo';
+}
+
+/** Alimentador de arriba visto desde arriba: queda detrás de la impresora. */
+function feeder(label = 'Alimentador de arriba') {
+  return h('div.feeder', h('span.tray-label', label));
+}
+
 function tag(text, { cls = '', ic, style } = {}) {
   return h('span.scene-tag', { class: cls, style }, ic ? icon(ic, 'sm') : null, text);
 }
@@ -31,12 +53,13 @@ function tag(text, { cls = '', ic, style } = {}) {
  * opts.faceUp: el mazo va con la cara impresa hacia arriba
  */
 export function scene(mode, opts = {}) {
-  const root = h('div.scene', { class: mode, role: 'img', 'aria-label': opts.label || '' });
+  const top = opts.feed === 'top' && (mode === 'load' || mode === 'flip');
+  const root = h('div.scene', { class: [mode, top && 'feed-top'].filter(Boolean).join(' '), role: 'img', 'aria-label': opts.label || '' });
   root.append(...printerBody());
 
   if (mode === 'load') {
-    root.append(tray(), paper({ printed: false }), paper({ printed: false }), paper({ printed: false }));
-    root.append(tag(opts.text || 'Pon papel en la bandeja', { ic: 'arrowUp', style: { left: 'calc(50% + 150px)', bottom: '90px' } }));
+    root.append(top ? feeder() : tray(), paper({ printed: false }), paper({ printed: false }), paper({ printed: false }));
+    root.append(tag(opts.text || (top ? 'Pon papel en el alimentador' : 'Pon papel en la bandeja'), { ic: 'arrowUp', style: top ? { right: 'calc(50% + 140px)', top: '30px' } : { left: 'calc(50% + 150px)', bottom: '90px' } }));
   }
 
   if (mode === 'print') {
@@ -47,7 +70,7 @@ export function scene(mode, opts = {}) {
   if (mode === 'flip') {
     const faceUp = opts.faceUp !== false;
     root.append(
-      tray(),
+      top ? feeder() : tray(),
       h('div.out-spot', { style: { left: 'calc(50% + 210px)', bottom: '76px', right: 'auto' } }),
       tag('Hojas ya impresas', { style: { left: 'calc(50% + 222px)', bottom: '186px' } }),
     );
@@ -55,9 +78,12 @@ export function scene(mode, opts = {}) {
     mover.style.setProperty('--flip', faceUp ? '0deg' : '180deg');
     mover.style.setProperty('--dx', '285px');
     root.append(mover);
+    const faceTag = top
+      ? (faceUp ? 'Cara impresa hacia TI' : 'Cara impresa hacia ATRÁS')
+      : (faceUp ? 'Cara impresa hacia ARRIBA' : 'Cara impresa hacia ABAJO');
     root.append(
-      tag(faceUp ? 'Cara impresa hacia ARRIBA' : 'Cara impresa hacia ABAJO', { cls: 'red', ic: faceUp ? 'arrowUp' : 'flip', style: { left: 'calc(50% - 330px)', bottom: '96px' } }),
-      tag('Borde de arriba hacia ADENTRO', { cls: 'red', ic: 'arrowUp', style: { left: 'calc(50% - 330px)', bottom: '52px' } }),
+      tag(faceTag, { cls: 'red', ic: faceUp ? 'arrowUp' : 'flip', style: top ? { right: 'calc(50% + 140px)', top: '16px' } : { left: 'calc(50% - 330px)', bottom: '96px' } }),
+      tag(top ? 'Borde de arriba hacia ABAJO' : 'Borde de arriba hacia ADENTRO', { cls: 'red', ic: 'arrowUp', style: top ? { right: 'calc(50% + 140px)', top: '58px' } : { left: 'calc(50% - 330px)', bottom: '52px' } }),
     );
   }
 
@@ -86,6 +112,12 @@ export function movementFor(outputFace, faceUp) {
 export function voiceForMovement(profile) {
   const faceUp = profile.faceUp !== false;
   const move = movementFor(profile.outputFace || null, faceUp);
+  if (isTop(profile)) {
+    // Frases propias del alimentador de arriba («de pie», «mirando hacia ti/atrás», «flecha hacia abajo»)
+    if (move === 'none') return faceUp ? 'mov-top-none-ti' : 'mov-top-none-atras';
+    if (move === 'book') return faceUp ? 'mov-top-book-ti' : 'mov-top-book-atras';
+    return move === 'rotate' ? 'mov-top-rotate' : 'mov-top-calendar';
+  }
   if (move === 'none') return faceUp ? 'mov-none-arriba' : 'mov-none-abajo';
   if (move === 'book') return faceUp ? 'mov-book-arriba' : 'mov-book-abajo';
   return move === 'rotate' ? 'mov-rotate' : 'mov-calendar';
@@ -115,6 +147,24 @@ function finalPose(p, move) {
 
 const tf = (x, y, p, s = 1) => `translate(${x}px, ${y}px) rotateX(${p.rx}deg) rotateY(${p.ry}deg) rotateZ(${p.rz}deg) scale(${s})`;
 
+function sideViewTop(faceUp) {
+  // Vista de lado con alimentador de arriba: tú a la izquierda, el mazo de pie e inclinado hacia atrás.
+  // faceUp = lo impreso mirando hacia ti (cara izquierda del mazo).
+  const lx = faceUp ? 120 : 136;
+  return h('div.side-view', { 'aria-hidden': 'true', html: `
+    <svg viewBox="0 0 230 90" fill="none">
+      <text x="8" y="12" font-size="10" fill="#AEBDD0" font-family="Inter, Segoe UI, sans-serif">Vista de lado</text>
+      <text x="10" y="58" font-size="9.5" fill="#AEBDD0" font-family="Inter, Segoe UI, sans-serif">tú</text>
+      <path d="M24 54h12m-5-5 5 5-5 5" stroke="#AEBDD0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="60" y="48" width="160" height="34" rx="8" fill="#2b3d5a" stroke="#405776"/>
+      <text x="196" y="70" text-anchor="middle" font-size="9.5" fill="#AEBDD0" font-family="Inter, Segoe UI, sans-serif">impresora</text>
+      <path d="M128 48 L 140 14 L 158 14 L 146 48 Z" fill="#F4F1EA"/>
+      <path d="M${lx} 46 L ${lx + 11} 16" stroke="#DC2626" stroke-width="4"/>
+      <path d="M150 30v14m-4-5 4 5 4-5" stroke="#FCA5A5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="${faceUp ? 50 : 162}" y="24" font-size="11" font-weight="700" fill="#FCA5A5" font-family="Inter, Segoe UI, sans-serif">${faceUp ? 'lo impreso hacia ti' : 'impreso atrás'}</text>
+    </svg>` });
+}
+
 function sideView(faceUp) {
   // Vista de lado: la bandeja, el mazo y dónde queda lo impreso.
   const printedY = faceUp ? 30 : 44;
@@ -142,18 +192,24 @@ export function paperGuide(profile, { sheets = null, compact = false } = {}) {
   const p0 = initialPose(out);
   const p1 = finalPose(p0, move);
   const n = sheets ? `las ${sheets} hojas` : 'las hojas';
+  const top = isTop(profile);
+  // Con alimentador de arriba, el mazo que quedó acostado con la flecha hacia la impresora se levanta
+  // inclinando el borde de la flecha hacia abajo: la cara de arriba pasa a mirar hacia ti.
+  const p2 = top ? { ...p1, rx: p1.rx + 58 } : p1;
 
   const steps = [
     { t: 'Toma el mazo', d: out === 'down' ? `Toma ${n} que salieron, sin desordenarlas. Se ve el lado en blanco.` : out ? `Toma ${n} que salieron, sin desordenarlas. Se ve lo impreso.` : `Toma ${n} que salieron, sin desordenarlas.` },
     { t: MOVE_TEXT[move].short, d: MOVE_TEXT[move].long },
-    { t: 'Ponlo en la bandeja', d: `Con lo impreso hacia ${faceUp ? 'arriba' : 'abajo'} y la flecha apuntando hacia adentro de la impresora.${out === 'down' && faceUp ? ' Si la flecha apunta hacia ti, gíralo sobre la mesa.' : ''}` },
+    top
+      ? { t: 'Ponlo en el alimentador', d: `Ponlo de pie en el alimentador de arriba, con lo impreso ${faceWord(profile, faceUp)} y la flecha apuntando hacia abajo, hacia la ranura.${out === 'down' && faceUp ? ' Si la flecha apunta hacia ti, gíralo sobre la mesa antes de levantarlo.' : ''}` }
+      : { t: 'Ponlo en la bandeja', d: `Con lo impreso hacia ${faceUp ? 'arriba' : 'abajo'} y la flecha apuntando hacia adentro de la impresora.${out === 'down' && faceUp ? ' Si la flecha apunta hacia ti, gíralo sobre la mesa.' : ''}` },
   ];
 
   const mover = paper({ cls: 'mover-js' });
   const badge = h('div.move-badge', { class: move }, h('span.rot', { html: ROT_ARROW }), h('b', MOVE_TEXT[move].short));
-  const sc = h('div.scene.guide-scene', { class: compact ? 'compact' : '', role: 'img', 'aria-label': steps.map((s, i) => `${i + 1}. ${s.d}`).join(' ') },
-    ...printerBody(), h('div.tray', h('span.tray-label', 'Bandeja de papel')),
-    h('div.out-spot', h('span.tray-label', 'Salida')), mover, badge, sideView(faceUp));
+  const sc = h('div.scene.guide-scene', { class: [compact && 'compact', top && 'feed-top'].filter(Boolean).join(' '), role: 'img', 'aria-label': steps.map((s, i) => `${i + 1}. ${s.d}`).join(' ') },
+    ...printerBody(), top ? feeder() : h('div.tray', h('span.tray-label', 'Bandeja de papel')),
+    h('div.out-spot', h('span.tray-label', 'Salida')), mover, badge, top ? sideViewTop(faceUp) : sideView(faceUp));
 
   const items = steps.map((s, i) => h('li', { onclick: () => goTo(i, true) }, h('span.gn', String(i + 1)), h('span', h('b', s.t), h('span', s.d))));
   const list = h('ol.guide-steps', items);
@@ -176,12 +232,18 @@ export function paperGuide(profile, { sheets = null, compact = false } = {}) {
     OUT.x = Math.round(spot.left + spot.width / 2 - (box.left + box.width / 2));
     OUT.y = Math.round(spot.bottom - base);
     MID.x = Math.round(OUT.x * 0.55);
+    if (top) {
+      // Destino: el alimentador detrás de la impresora (más arriba en el dibujo).
+      const fd = sc.querySelector('.feeder')?.getBoundingClientRect();
+      // centro de la hoja sobre el centro del alimentador
+      if (fd) IN.y = Math.round((fd.top + fd.bottom) / 2 - (base - mover.offsetHeight / 2));
+    }
   }
 
   function pose(i) {
     if (i === 0) return tf(OUT.x, OUT.y, p0);
     if (i === 1) return tf(MID.x, MID.y, p1, 1.08);
-    return tf(IN.x, IN.y, p1);
+    return tf(IN.x, IN.y, p2, top ? 0.92 : 1);
   }
 
   function goTo(i, byUser = false) {
@@ -212,6 +274,41 @@ export function paperGuide(profile, { sheets = null, compact = false } = {}) {
   requestAnimationFrame(() => goTo(0));
   root.goTo = (i) => goTo(i, true); // para la autoprueba
   return root;
+}
+
+// Dibujos propios de los dos tipos de impresora (vista de 3/4, sin marca).
+const FEED_ART = {
+  bottom: `<svg viewBox="0 0 180 120" fill="none" aria-hidden="true">
+    <path d="M30 40 L 150 40 L 160 94 L 20 94 Z" fill="#2b3d5a" stroke="#405776" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M34 34 L 146 34 L 150 44 L 30 44 Z" fill="#1d2b42" stroke="#405776" stroke-width="1.5" stroke-linejoin="round"/>
+    <rect x="52" y="58" width="76" height="6" rx="2" fill="#070d18"/>
+    <path d="M56 62 L 124 62 L 132 74 L 48 74 Z" fill="#F4F1EA"/>
+    <rect x="26" y="80" width="128" height="22" rx="4" fill="#1d2b42" stroke="#DC2626" stroke-width="2.2" stroke-dasharray="5 3"/>
+    <path d="M36 88 L 144 88" stroke="#F4F1EA" stroke-width="4" stroke-linecap="round"/>
+    <path d="M36 94 L 144 94" stroke="#F4F1EA" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="140" cy="52" r="3" fill="#10b981"/>
+  </svg>`,
+  top: `<svg viewBox="0 0 180 120" fill="none" aria-hidden="true">
+    <path d="M62 44 L 76 6 L 124 6 L 118 44 Z" fill="#F4F1EA" stroke="#DC2626" stroke-width="2.2" stroke-dasharray="5 3" stroke-linejoin="round"/>
+    <path d="M84 16 h28 M82 22 h24 M80 28 h28" stroke="#b9b2a3" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M30 46 L 150 46 L 160 100 L 20 100 Z" fill="#2b3d5a" stroke="#405776" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M34 40 L 146 40 L 150 50 L 30 50 Z" fill="#1d2b42" stroke="#405776" stroke-width="1.5" stroke-linejoin="round"/>
+    <rect x="52" y="74" width="76" height="6" rx="2" fill="#070d18"/>
+    <path d="M56 78 L 124 78 L 134 94 L 46 94 Z" fill="#F4F1EA"/>
+    <circle cx="140" cy="62" r="3" fill="#10b981"/>
+  </svg>`,
+};
+
+/** Opciones para «¿por dónde pones el papel?». */
+export function feedChoices(onPick, current = null) {
+  const opts = [
+    { key: 'bottom', title: 'El papel va abajo', text: 'En un cajón o bandeja adelante, con las hojas acostadas. Por ejemplo, Brother DCP-T.' },
+    { key: 'top', title: 'El papel va arriba', text: 'En un alimentador atrás, con las hojas de pie. Por ejemplo, muchas Canon serie G y Epson EcoTank.' },
+  ];
+  return h('div.choices.feed-choices', opts.map((o) =>
+    h('button.choice', { class: current === o.key ? 'current' : '', 'aria-pressed': String(current === o.key), onclick: () => onPick(o.key) },
+      h('span.feed-art', { html: FEED_ART[o.key] }),
+      h('span', h('b', o.title), h('span', o.text)))));
 }
 
 /** Opciones para «¿cómo salen las hojas?». */

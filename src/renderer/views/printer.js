@@ -1,12 +1,19 @@
 // Ajustes de la impresora: calibración, papel, color, bandeja y opciones del driver.
 import { h, icon, clear, toast } from '../ui.js';
-import { paperGuide } from '../scenes.js';
+import { paperGuide, faceWord, isTop } from '../scenes.js';
+import { saveFeed } from './calibrate.js';
 
 const OUTPUTS = [
   ['', 'No lo sé todavía (se pregunta al imprimir)'],
   ['up-in', 'Se ve lo impreso y la flecha apunta hacia la impresora'],
   ['up-out', 'Se ve lo impreso y la flecha apunta hacia mí'],
   ['down', 'Se ve el lado en blanco'],
+];
+
+const FEEDS = [
+  ['', 'No lo sé todavía (se pregunta al imprimir)'],
+  ['bottom', 'Por abajo: cajón o bandeja, hojas acostadas'],
+  ['top', 'Por arriba: alimentador atrás, hojas de pie'],
 ];
 
 const PAPERS = [['auto', 'Según el documento'], ['letter', 'Carta'], ['legal', 'Oficio (Legal)'], ['A4', 'A4'], ['A5', 'A5']];
@@ -41,7 +48,8 @@ export function mountPrinter(root, app) {
         ? h('div.note.ok', icon('circleCheck'), h('p', 'Calibrada. La app sabe cómo dar vuelta los reversos en esta impresora.'))
         : h('div.note.warn', icon('alert'), h('p', 'Todavía no está calibrada. Usa 2 hojas de prueba y toma un minuto.')),
       h('dl.kv',
-        h('dt', 'Mazo al darlo vuelta'), h('dd', prof.faceUp ? 'Cara impresa hacia arriba' : 'Cara impresa hacia abajo'),
+        h('dt', 'El papel entra'), h('dd', prof.feed === 'top' ? 'Por arriba (alimentador)' : prof.feed === 'bottom' ? 'Por abajo (cajón o bandeja)' : 'Sin dato'),
+        h('dt', 'Mazo al darlo vuelta'), h('dd', `Cara impresa ${faceWord(prof)}`),
         h('dt', 'Orden de los reversos'), h('dd', `${prof.effectiveInvert ? 'Invertido' : 'Normal'}${prof.outputFace ? (prof.invertFix ? ' (corregido por la calibración)' : ' (según el movimiento)') : ''}`),
         h('dt', 'Reversos girados 180°'), h('dd', prof.rotate ? 'Sí' : 'No'),
         h('dt', 'Velocidad medida'), h('dd', `~${prof.secPerSheet} s por cara`)),
@@ -55,7 +63,7 @@ export function mountPrinter(root, app) {
       toast(`Guardado: lotes de hasta ${v} hojas.`);
     });
     const tray = h('div.card',
-      h('h3', h('span.ib', icon('layers')), 'Bandeja'),
+      h('h3', h('span.ib', icon('layers')), isTop(prof) ? 'Alimentador' : 'Bandeja'),
       h('div', h('label.label', 'Hojas que caben de una vez'), capInput,
         h('p.hint', 'Si un trabajo necesita más hojas, la app lo divide en lotes y te avisa cuándo poner papel nuevo. La Brother DCP-T710W admite unas 150 hojas; 100 deja margen.')));
 
@@ -93,19 +101,30 @@ export function mountPrinter(root, app) {
         toast('Guardado. La animación ya muestra el movimiento para tu impresora.');
       },
     }, OUTPUTS.map(([v, l]) => h('option', { value: v, selected: (prof.outputFace || '') === v }, l)));
+    const feedSel = h('select.field', {
+      'aria-label': 'Por dónde entra el papel',
+      onchange: async () => {
+        if (!feedSel.value) return;
+        const before = S.profile.feed;
+        S.profile = await saveFeed(api, S.printer, feedSel.value, { keepCalibration: true });
+        toast(before && before !== feedSel.value && S.profile.calibrated ? 'Guardado. Como cambió el lugar del papel, conviene volver a calibrar.' : 'Guardado.');
+        render();
+      },
+    }, FEEDS.map(([v, l]) => h('option', { value: v, selected: (prof.feed || '') === v, disabled: v === '' && !!prof.feed }, l)));
     const faceSel = h('select.field', {
-      'aria-label': 'Cómo va el mazo en la bandeja',
+      'aria-label': 'Cómo va el mazo',
       onchange: async () => {
         S.profile = await api.updatePrinter(S.printer, { faceUp: faceSel.value === 'up' });
         drawGuide();
         toast('Guardado.');
       },
-    }, h('option', { value: 'up', selected: prof.faceUp }, 'Con lo impreso hacia arriba'), h('option', { value: 'down', selected: !prof.faceUp }, 'Con lo impreso hacia abajo'));
+    }, h('option', { value: 'up', selected: prof.faceUp }, `Con lo impreso ${faceWord(prof, true)}`), h('option', { value: 'down', selected: !prof.faceUp }, `Con lo impreso ${faceWord(prof, false)}`));
     const guideCard = h('div.card.span',
       h('h3', h('span.ib', icon('flip')), 'Cómo poner el papel para los reversos'),
+      h('div', h('label.label', 'El papel entra…'), feedSel),
       h('div.row2',
         h('div', h('label.label', 'Cuando salen las hojas…'), outSel),
-        h('div', h('label.label', 'En la bandeja van…'), faceSel, h('p.hint', 'Lo averigua la calibración; cámbialo solo si sabes que es distinto.'))),
+        h('div', h('label.label', isTop(prof) ? 'En el alimentador van…' : 'En la bandeja van…'), faceSel, h('p.hint', 'Lo averigua la calibración; cámbialo solo si sabes que es distinto.'))),
       guideSlot);
     drawGuide();
 

@@ -1,7 +1,36 @@
 // Calibración: 2 hojas de prueba y una pregunta visual. Guarda el perfil de la impresora.
 import { h, icon, toast } from '../ui.js';
 import { Flow, printPhase } from '../flow.js';
-import { scene, mini, paperGuide, outputChoices, voiceForMovement } from '../scenes.js';
+import { scene, mini, paperGuide, outputChoices, feedChoices, feedPlace, faceWord, voiceForMovement } from '../scenes.js';
+
+/**
+ * Guarda por dónde entra el papel. Si cambia (o si recién se sabe que es de arriba), el lado en que va
+ * lo impreso vuelve al valor típico de ese tipo, salvo que haya una calibración que conservar.
+ * Típico: cajón abajo → lo impreso hacia arriba; alimentador de arriba → lo impreso mirando hacia atrás
+ * (esas impresoras imprimen la cara que mira hacia ti).
+ */
+export async function saveFeed(api, printer, feed, { keepCalibration = false } = {}) {
+  const prof = await api.printerProfile(printer);
+  const changed = prof.feed ? prof.feed !== feed : feed === 'top';
+  const patch = { feed };
+  if (changed && !(keepCalibration && prof.calibrated)) patch.faceUp = feed !== 'top';
+  return api.updatePrinter(printer, patch);
+}
+
+/** Pregunta por dónde se pone el papel (con dibujos) y lo guarda en el perfil. */
+export async function askFeed(flow, api, printer, opts = {}) {
+  const prof = await api.printerProfile(printer);
+  let picked;
+  const ctl = flow.stage({
+    chip: 'act',
+    voice: 'tipo-pregunta',
+    title: '¿Por dónde pones el papel en tu impresora?',
+    lead: 'Elige la que se parece a la tuya. Así las instrucciones te muestran dónde poner el mazo.',
+    body: feedChoices((k) => { picked = k; ctl.resolve(k); }, prof.feed),
+  });
+  await ctl.wait();
+  return saveFeed(api, printer, picked, opts);
+}
 
 /** Pregunta cómo salen las hojas de la impresora y lo guarda en el perfil. */
 export async function askOutputFace(flow, api, printer) {
@@ -38,6 +67,7 @@ export async function runCalibration(root, app) {
   let profile = await api.printerProfile(printer);
   const doc = { name: 'Calibrar impresora', kind: 'printer', sub: printer };
   const steps = [
+    { id: 'feed', label: 'Tipo de impresora' },
     { id: 'intro', label: 'Cómo funciona' },
     { id: 'paper', label: 'Poner 2 hojas' },
     { id: 'fronts', label: 'Imprimir frentes de prueba' },
@@ -48,21 +78,25 @@ export async function runCalibration(root, app) {
   ];
   const flow = new Flow(root, { doc, steps });
 
-  flow.mark('intro');
   // Desde «Imprimir sin calibrar…»: primero la advertencia; si elige calibrar, sigue la calibración.
   if (app.S.calSkipFirst) {
     app.S.calSkipFirst = false;
+    flow.mark('intro');
     if ((await riskStage(flow)) === 'skip') {
       await api.updatePrinter(printer, { riskAccepted: true });
       return app.go(app.S.returnTo || 'home', { keepSelection: true });
     }
   }
+  // Lo primero: qué tipo de impresora es (de esto dependen los textos y los dibujos)
+  flow.mark('feed');
+  profile = await askFeed(flow, api, printer);
+  flow.mark('intro');
   let ctl = flow.stage({
     chip: 'act',
     voice: 'cal-intro',
     title: 'Enseñémosle a la app cómo mueve el papel tu impresora',
     lead: 'Cada impresora entrega las hojas de una forma distinta. Con <b>2 hojas de prueba</b> la app aprende en qué orden y hacia dónde debe imprimir los reversos. Se hace una sola vez por impresora.',
-    scene: scene('flip', { faceUp: profile.faceUp }),
+    scene: scene('flip', { faceUp: profile.faceUp, feed: profile.feed }),
     actions: [
       { key: 'go', label: 'Empezar la prueba', primary: true, icon: 'sparkles' },
       { key: 'skip', label: 'Saltar la calibración', ghost: true },
@@ -82,9 +116,9 @@ export async function runCalibration(root, app) {
     ctl = flow.stage({
       chip: 'act',
       voice: 'cal-papel',
-      title: 'Pon 2 hojas en la bandeja',
+      title: `Pon 2 hojas en ${feedPlace(profile)}`,
       lead: 'Hojas en blanco, del tamaño que usas siempre. Cuando estén puestas, aprieta <b>Imprimir frentes</b>.',
-      scene: scene('load', { text: '2 hojas' }),
+      scene: scene('load', { text: '2 hojas', feed: profile.feed }),
       actions: [{ key: 'go', label: 'Imprimir frentes', primary: true, icon: 'printer' }],
     });
     await ctl.wait();
@@ -103,7 +137,7 @@ export async function runCalibration(root, app) {
     ctl = flow.stage({
       chip: 'act',
       voice: voiceForMovement(profile),
-      title: 'Toma las 2 hojas y vuelve a ponerlas en la bandeja',
+      title: `Toma las 2 hojas y vuelve a ponerlas en ${feedPlace(profile)}`,
       lead: 'Sigue los 3 pasos de la animación. Puedes repetirla o avanzar a tu ritmo.',
       scene: paperGuide(profile, { sheets: 2 }),
       actions: [{ key: 'go', label: 'Ya las puse · imprimir reversos', primary: true, icon: 'printer' }],
@@ -137,7 +171,7 @@ export async function runCalibration(root, app) {
         chipText: 'OTRA VEZ',
         voice: 'cal-otra-vez',
         title: 'Entendido: tu impresora imprime por el otro lado',
-        lead: `Repitamos la prueba con 2 hojas nuevas. Esta vez pondrás el mazo con la <b>cara impresa hacia ${profile.faceUp ? 'arriba' : 'abajo'}</b>.`,
+        lead: `Repitamos la prueba con 2 hojas nuevas. Esta vez pondrás el mazo con la <b>cara impresa ${faceWord(profile)}</b>.`,
         scene: paperGuide(profile, { sheets: 2 }),
         actions: [{ key: 'go', label: 'Repetir la prueba', primary: true, icon: 'refresh' }],
       });
@@ -158,7 +192,7 @@ export async function runCalibration(root, app) {
     chip: 'done',
     voice: 'cal-lista',
     title: 'Impresora calibrada',
-    lead: `Desde ahora los reversos salen en el orden correcto${profile.rotate ? ' y girados para que queden derechos' : ''}. Si cambias de impresora o de bandeja, puedes volver a calibrar en <b>Impresora</b>.`,
+    lead: `Desde ahora los reversos salen en el orden correcto${profile.rotate ? ' y girados para que queden derechos' : ''}. Si cambias de impresora o de lugar del papel, puedes volver a calibrar en <b>Impresora</b>.`,
     scene: scene('done', { stamp: 'CALIBRADA' }),
     actions: [{ key: 'ok', label: app.S.returnTo === 'home' ? 'Volver a imprimir' : 'Listo', primary: true, icon: 'check' }],
   });

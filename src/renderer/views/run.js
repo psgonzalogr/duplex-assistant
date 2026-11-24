@@ -1,8 +1,8 @@
 // Asistente de impresión: papel → frentes → dar vuelta → reversos (por lote) → listo.
 import { h, icon, plural, toast } from '../ui.js';
 import { Flow, printPhase } from '../flow.js';
-import { scene, paperGuide, voiceForMovement } from '../scenes.js';
-import { askOutputFace } from './calibrate.js';
+import { scene, paperGuide, voiceForMovement, feedPlace, isTop } from '../scenes.js';
+import { askOutputFace, askFeed } from './calibrate.js';
 
 export async function runPrint(root, app, job) {
   const { api } = app;
@@ -41,6 +41,12 @@ export async function runPrint(root, app, job) {
     : null;
   const flow = new Flow(root, { doc, steps, sideNote });
 
+  // Se pregunta una sola vez por impresora: de esto dependen los textos y los dibujos.
+  if (!profile.feed) {
+    flow.mark(`paper${plan.batches[0].index}`);
+    profile = await askFeed(flow, api, printer, { keepCalibration: true });
+  }
+
   for (const b of plan.batches) {
     // 1. Papel
     flow.mark(`paper${b.index}`);
@@ -48,11 +54,11 @@ export async function runPrint(root, app, job) {
     let ctl = flow.stage({
       chip: 'act',
       voice: first ? 'run-papel' : 'run-lote',
-      title: first ? `Pon al menos ${plural(b.sheets, 'hoja', 'hojas')} en la bandeja` : `Lote ${b.index}: saca las hojas terminadas y pon ${plural(b.sheets, 'hoja nueva', 'hojas nuevas')}`,
+      title: first ? `Pon al menos ${plural(b.sheets, 'hoja', 'hojas')} en ${feedPlace(profile)}` : `Lote ${b.index}: saca las hojas terminadas y pon ${plural(b.sheets, 'hoja nueva', 'hojas nuevas')}`,
       lead: multi
-        ? `Tu bandeja admite unas ${profile.capacity} hojas, así que el trabajo va en <b>${plan.batches.length} lotes</b>. Este lote lleva las copias ${b.firstCopy}${b.lastCopy !== b.firstCopy ? `–${b.lastCopy}` : ''}.`
+        ? `${isTop(profile) ? 'Tu alimentador' : 'Tu bandeja'} admite unas ${profile.capacity} hojas, así que el trabajo va en <b>${plan.batches.length} lotes</b>. Este lote lleva las copias ${b.firstCopy}${b.lastCopy !== b.firstCopy ? `–${b.lastCopy}` : ''}.`
         : `Se usarán <b>${plural(b.sheets, 'hoja', 'hojas')}</b> en total. Cuando el papel esté listo, aprieta <b>Imprimir caras de adelante</b>.`,
-      scene: scene('load', { text: `${b.sheets} hojas` }),
+      scene: scene('load', { text: `${b.sheets} hojas`, feed: profile.feed }),
       actions: [
         { key: 'go', label: 'Imprimir caras de adelante', primary: true, icon: 'printer' },
         { key: 'cancel', label: 'Cancelar', ghost: true },
@@ -85,7 +91,7 @@ export async function runPrint(root, app, job) {
       ctl = flow.stage({
         chip: 'act',
         voice: voiceForMovement(profile),
-        title: `Toma las ${b.sheets} hojas y ponlas de nuevo en la bandeja`,
+        title: `Toma las ${b.sheets} hojas y ponlas de nuevo en ${feedPlace(profile)}`,
         lead: 'Sigue los 3 pasos de la animación, sin cambiar el orden de las hojas.',
         scene: paperGuide(profile, { sheets: b.sheets }),
         note: b.blankBacks ? blankBacksNote(b.blankBacks, plan.lastPage, true) : undefined,

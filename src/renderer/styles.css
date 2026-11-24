@@ -145,6 +145,11 @@ button.linkish { border: 0; background: none; font-size: 14px; height: 32px; pad
   .guide-scene .paper.mover-js { bottom: 16px; }
   .guide-scene .out-spot { width: 112px; height: 78px; bottom: 50px; }
   .guide-scene .side-view { width: 190px; }
+  .guide-scene.feed-top .feeder { height: 46px; }
+  .guide-scene.feed-top .printer { top: 62px; }
+  .guide-scene.feed-top .slot { top: 146px; }
+  .scene.feed-top .printer { top: 84px; }
+  .scene.feed-top .slot { top: 198px; }
   .guide { gap: 10px; }
   .quick { display: none; }
   .panel-body { gap: 16px; padding-top: 14px; }
@@ -425,12 +430,12 @@ h1, h2, h3 { color: var(--texto); margin: 0; font-family: var(--font-display); l
 /* flip: tomar el mazo y ponerlo en la bandeja */
 .scene.flip .paper.mover { bottom: 40px; animation: flip-move 5.2s var(--ease-quint) infinite; }
 @keyframes flip-move {
-  0% { transform: translate(var(--dx, 285px), -36px) rotateY(0) scale(1); opacity: 0; }
-  10% { transform: translate(var(--dx, 285px), -36px) rotateY(0) scale(1); opacity: 1; }
-  28% { transform: translate(var(--dx, 285px), -70px) rotateY(0) scale(1.05); }
-  52% { transform: translate(0, -70px) rotateY(var(--flip, 0deg)) scale(1.05); }
-  72%, 92% { transform: translate(0, 0) rotateY(var(--flip, 0deg)) scale(1); opacity: 1; }
-  100% { transform: translate(0, 0) rotateY(var(--flip, 0deg)) scale(1); opacity: 0; }
+  0% { transform: translate(var(--dx, 285px), var(--oy1, -36px)) rotateY(0) scale(1); opacity: 0; }
+  10% { transform: translate(var(--dx, 285px), var(--oy1, -36px)) rotateY(0) scale(1); opacity: 1; }
+  28% { transform: translate(var(--dx, 285px), var(--oy2, -70px)) rotateY(0) scale(1.05); }
+  52% { transform: translate(0, var(--oy2, -70px)) rotateY(var(--flip, 0deg)) scale(1.05); }
+  72%, 92% { transform: translate(0, 0) rotateX(var(--tilt, 0deg)) rotateY(var(--flip, 0deg)) scale(1); opacity: 1; }
+  100% { transform: translate(0, 0) rotateX(var(--tilt, 0deg)) rotateY(var(--flip, 0deg)) scale(1); opacity: 0; }
 }
 .scene.flip .out-spot { position: absolute; right: 70px; bottom: 76px; width: 150px; height: 104px; border-radius: 8px; border: 2px dashed var(--linea); }
 
@@ -464,6 +469,19 @@ h1, h2, h3 { color: var(--texto); margin: 0; font-family: var(--font-display); l
 .side-view svg { display: block; width: 100%; height: auto; }
 .side-view { position: absolute; left: 16px; bottom: 12px; width: 230px; padding: 6px 8px 2px; border-radius: 12px; background: rgba(9,17,31,.75); border: 1px solid var(--linea); opacity: .35; transition: opacity .3s; }
 .guide-scene[data-step='3'] .side-view { opacity: 1; }
+/* Alimentador de arriba: queda detrás de la impresora (más arriba en el dibujo) y la impresora baja */
+.scene .feeder { position: absolute; left: 50%; top: 12px; width: 250px; height: 66px; translate: -50% 0; border-radius: 12px; border: 2px dashed var(--linea-fuerte); background: rgba(9,17,31,.35); }
+.scene .feeder .tray-label { left: auto; right: -12px; bottom: 50%; translate: 100% 50%; }
+.scene.feed-top .printer { top: 96px; }
+.scene.feed-top .slot { top: 210px; }
+.scene.feed-top { perspective: 900px; }
+.scene.load.feed-top .paper { top: 6px; bottom: auto; transform-origin: 50% 100%; animation-name: load-top; }
+@keyframes load-top { 0% { transform: translateY(-110px) rotateX(58deg); opacity: 0; } 30%, 80% { transform: translateY(0) rotateX(58deg); opacity: 1; } 100% { transform: translateY(0) rotateX(58deg); opacity: 0; } }
+.scene.flip.feed-top .paper.mover { top: 2px; bottom: auto; --oy1: 120px; --oy2: 86px; --tilt: 58deg; }
+.guide-scene.feed-top .feeder { top: 8px; height: 54px; width: 220px; }
+.guide-scene.feed-top .printer { top: 74px; }
+.guide-scene.feed-top .slot { top: 170px; }
+.guide-scene.feed-top .out-spot { bottom: 38px; }
 .guide-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .guide-steps li { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: start; padding: 12px; border-radius: 14px; border: 1.5px solid var(--linea); background: var(--pizarra); cursor: pointer; transition: border-color .2s, background .2s; }
 .guide-steps li:hover { border-color: var(--linea-fuerte); }
@@ -478,6 +496,10 @@ h1, h2, h3 { color: var(--texto); margin: 0; font-family: var(--font-display); l
 .guide-steps li.done .gn { border: 0; background: var(--verde); color: #fff; }
 .guide-steps li { padding: 10px 12px; }
 
+.choices.feed-choices .choice { grid-template-columns: 1fr; justify-items: center; text-align: center; gap: 10px; padding: 20px 18px; }
+.choices.feed-choices .choice.current { border-color: var(--linea-fuerte); }
+.feed-art { display: block; width: min(220px, 100%); }
+.feed-art svg { display: block; width: 100%; height: auto; }
 .choices.out-choices { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .choices.out-choices .choice { grid-template-columns: 1fr; justify-items: center; text-align: center; gap: 12px; padding: 18px 14px; }
 .mini-out { display: flex; flex-direction: column; align-items: center; gap: 6px; }

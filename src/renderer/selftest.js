@@ -32,7 +32,7 @@ export async function selftest(app, samplePath) {
     print: async () => { await wait(300); return { ref: 'test' }; },
     queue: async () => [{ name: '', printed: 0, total: 0, status: '' }],
     learnSpeed: async () => null,
-    printerProfile: async (n) => (fakeProfile ||= { ...(await real.printerProfile(n)), calibrated: true, secPerSheet: 9, faceUp: true, outputFace: 'up-out' }),
+    printerProfile: async (n) => (fakeProfile ||= { ...(await real.printerProfile(n)), calibrated: true, secPerSheet: 9, faceUp: true, outputFace: 'up-out', feed: 'bottom' }),
     updatePrinter: async (_n, patch) => (fakeProfile = { ...fakeProfile, ...patch }),
     settings: async () => fakeSettings,
     setSettings: async (p) => (fakeSettings = { ...fakeSettings, ...p }),
@@ -168,6 +168,10 @@ export async function selftest(app, samplePath) {
 
     // Calibración
     app.go('calibrate', { returnTo: 'home' });
+    await until(() => document.querySelector('.feed-choices'));
+    await wait(700);
+    await T.capture(`${tag}-21-tipo-impresora`);
+    document.querySelectorAll('.feed-choices .choice')[0].click();
     await until(() => document.querySelector('.stage h1')?.textContent.includes('Enseñémosle'));
     await wait(1600);
     await T.capture(`${tag}-09-calibrar`);
@@ -193,6 +197,28 @@ export async function selftest(app, samplePath) {
     await until(() => document.querySelector('.stage h1')?.textContent.includes('calibrada'));
     await wait(1200);
     await T.capture(`${tag}-11-calibrada`);
+
+    // Impresora con alimentador de arriba: calibración e instrucciones para dar vuelta el mazo
+    app.go('calibrate', { returnTo: 'home' });
+    await until(() => document.querySelector('.feed-choices'));
+    document.querySelectorAll('.feed-choices .choice')[1].click();
+    await until(() => document.querySelector('.stage h1')?.textContent.includes('Enseñémosle'));
+    await wait(3000);
+    await T.capture(`${tag}-22-calibrar-arriba`);
+    clickText('Empezar la prueba');
+    await until(() => document.querySelector('.stage h1')?.textContent.includes('Pon 2 hojas'));
+    await wait(1200);
+    await T.capture(`${tag}-23-papel-arriba`);
+    fakeProfile = { ...fakeProfile, outputFace: 'up-out', calibrated: true };
+    app.go('printer');
+    await wait(1200);
+    document.querySelector('.guide')?.scrollIntoView({ block: 'center' });
+    for (const i of [0, 1, 2]) {
+      document.querySelector('.guide').goTo(i);
+      await wait(1800);
+      await T.capture(`${tag}-24-guia-arriba-paso${i + 1}`);
+    }
+    fakeProfile = { ...fakeProfile, feed: 'bottom', faceUp: true };
   }
   await T.done();
 }
