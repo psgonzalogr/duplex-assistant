@@ -653,3 +653,8 @@ dialog.feedback .hint { margin: 14px 0 0; font-size: 13px; color: var(--apagado)
 .tour-actions .tour-gap { flex: 1; }
 .welcome-replay { display: flex; justify-content: center; margin-top: -6px; }
 
+/* Hoja doble: consejos y aviso */
+.note.tips ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.note.tips li { line-height: 1.45; }
+.report-row { display: flex; }
+

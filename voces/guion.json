@@ -47,6 +47,8 @@
     "run-papel-atras": "Pon la cantidad de hojas que te indico en la pantalla. Cuando estén listas, aprieta Imprimir caras de atrás.",
     "run-atras": "Primero imprimo las caras de atrás. Así, al terminar, el mazo queda ordenado y con la primera página arriba. No toques las hojas mientras salen.",
     "run-adelante": "Ahora salen las caras de adelante. Ya casi terminamos: el mazo va a quedar ordenado.",
-    "apilado-pregunta": "Ahora fíjate en la hoja que quedó arriba del montón. Si ves el lado en blanco, levántala y dale vuelta. Elige en la pantalla si dice hoja uno u hoja dos."
+    "apilado-pregunta": "Ahora fíjate en la hoja que quedó arriba del montón. Si ves el lado en blanco, levántala y dale vuelta. Elige en la pantalla si dice hoja uno u hoja dos.",
+    "doble-cal": "La impresora tomó dos hojas juntas. No guardé esta prueba, para no aprender un orden equivocado. Deja secar la tinta, airea las hojas y repitamos la prueba con dos hojas nuevas.",
+    "doble-run": "La impresora tomó dos hojas juntas, así que desde esa hoja los reversos quedan corridos. Saca las hojas de este lote, pon hojas nuevas y aprieta Repetir este lote. La próxima vez, deja secar la tinta y airea las hojas antes de ponerlas."
   }
 }

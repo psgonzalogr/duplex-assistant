@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('da', {
   planJob: (args) => invoke('job:plan', args),
   print: (args) => invoke('job:print', args),
   queue: (printer) => invoke('job:queue', printer),
+  cancelJob: (printer, ref) => invoke('job:cancel', printer, ref),
   calibration: () => invoke('job:calibration'),
   learnSpeed: (printer, sheets, seconds) => invoke('job:learn-speed', printer, sheets, seconds),
 

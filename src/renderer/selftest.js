@@ -31,6 +31,7 @@ export async function selftest(app, samplePath) {
     ...real,
     print: async () => { await wait(300); return { ref: 'test' }; },
     queue: async () => [{ name: '', printed: 0, total: 0, status: '' }],
+    cancelJob: async () => true,
     learnSpeed: async () => null,
     printerProfile: async (n) => (fakeProfile ||= { ...(await real.printerProfile(n)), calibrated: true, secPerSheet: 9, faceUp: true, outputFace: 'up-out', feed: 'bottom', stackReversed: false }),
     updatePrinter: async (_n, patch) => (fakeProfile = { ...fakeProfile, ...patch }),
@@ -211,6 +212,34 @@ export async function selftest(app, samplePath) {
     await until(() => document.querySelector('.stage h1')?.textContent.includes('calibrada'));
     await wait(1200);
     await T.capture(`${tag}-11-calibrada`);
+
+    // La impresora tomó 2 hojas juntas en los reversos de prueba
+    app.go('calibrate', { returnTo: 'printer' });
+    await until(() => document.querySelector('.feed-choices'));
+    document.querySelectorAll('.feed-choices .choice')[0].click();
+    await until(() => document.querySelector('.stage h1')?.textContent.includes('Enseñémosle'));
+    clickText('Empezar la prueba');
+    await until(() => document.querySelector('.stage h1')?.textContent.includes('Pon 2 hojas'));
+    clickText('Imprimir frentes');
+    await until(() => [...document.querySelectorAll('button')].some((b) => b.textContent.includes('Ya salieron todas')));
+    clickText('Ya salieron todas');
+    await until(() => document.querySelector('.out-choices'));
+    document.querySelectorAll('.out-choices .choice')[1].click();
+    await until(() => document.querySelector('.stack-choices'));
+    document.querySelector('.stack-choices .choice').click();
+    await until(() => document.querySelector('.stage h1')?.textContent.includes('Toma las 2'));
+    clickText('Ya las puse');
+    await until(() => [...document.querySelectorAll('button')].some((b) => b.textContent.includes('Tomó 2 hojas')));
+    await wait(600);
+    await T.capture(`${tag}-27-reversos-hoja-doble-boton`);
+    clickText('Tomó 2 hojas');
+    await until(() => document.querySelector('.stage h1')?.textContent.includes('2 hojas juntas'));
+    await wait(700);
+    await T.capture(`${tag}-27b-hoja-doble`);
+    clickText('Repetir la prueba');
+    await until(() => document.querySelector('.stage h1')?.textContent.includes('Pon 2 hojas'));
+    document.querySelector('.flow-exit').click();
+    await wait(600);
 
     // Salir de la calibración a mitad de camino: vuelve a donde estaba
     app.go('calibrate', { returnTo: 'printer' });

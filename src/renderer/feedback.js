@@ -21,10 +21,10 @@ function details(app) {
   return lines.join('\n');
 }
 
-export function openFeedback(app) {
+export function openFeedback(app, { topic = '' } = {}) {
   document.querySelector('dialog.feedback')?.remove();
   const subject = 'Duplex Assistant: problema o sugerencia';
-  const body = `Cuéntanos qué pasó o qué te gustaría mejorar (si puedes, adjunta una foto de las hojas):\n\n\n\n---\n${details(app)}\n`;
+  const body = `${topic ? `${topic}\n\n` : ''}Cuéntanos qué pasó o qué te gustaría mejorar (si puedes, adjunta una foto de las hojas):\n\n\n\n---\n${details(app)}\n`;
   const mailto = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
   const close = () => { dlg.close(); dlg.remove(); };

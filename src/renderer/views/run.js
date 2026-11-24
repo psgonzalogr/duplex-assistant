@@ -3,6 +3,7 @@ import { h, icon, plural, toast } from '../ui.js';
 import { Flow, printPhase } from '../flow.js';
 import { scene, paperGuide, voiceForMovement, feedPlace, isTop } from '../scenes.js';
 import { askOutputFace, askFeed } from './calibrate.js';
+import { DOUBLE_ACTION, doubleFeedStage } from '../doublefeed.js';
 
 export async function runPrint(root, app, job) {
   const { api } = app;
@@ -123,7 +124,7 @@ export async function runPrint(root, app, job) {
         chip: 'act',
         voice: voiceForMovement(profile),
         title: `Toma las ${b.sheets} hojas y ponlas de nuevo en ${feedPlace(profile)}`,
-        lead: 'Sigue los 3 pasos de la animación, sin cambiar el orden de las hojas.',
+        lead: 'Sigue los 3 pasos de la animación, sin cambiar el orden de las hojas. Antes de ponerlas, airéalas un poco y deja que se seque la tinta: así la impresora no toma 2 juntas.',
         scene: paperGuide(profile, { sheets: b.sheets }),
         note: b.blankBacks ? blankBacksNote(b.blankBacks, plan.lastPage, BF ? 'flip-bf' : 'flip') : undefined,
         actions: [
@@ -145,8 +146,18 @@ export async function runPrint(root, app, job) {
         progress: true,
       });
       if (!BF && b.blankBacks) ctl.setNote(blankBacksNote(b.blankBacks, plan.lastPage, 'second'));
-      const ok2 = await safePhase(flow, () => printPhase(api, ctl, { file: fileOf(b, b.passes[1]), printer, sheets: b.sheets, secPerSheet: plan.secPerSheet, label: T.label2 }));
+      const dbl = { ...DOUBLE_ACTION };
+      let res2;
+      const ok2 = await safePhase(flow, async () => { res2 = await printPhase(api, ctl, { file: fileOf(b, b.passes[1]), printer, sheets: b.sheets, secPerSheet: plan.secPerSheet, label: T.label2, extra: [dbl] }); });
       if (!ok2) return app.go('home');
+      if (res2 === 'aborted') return;
+      if (res2 === 'double') {
+        // Desde la hoja doble los reversos salen corridos: se repite el lote con hojas nuevas o se termina
+        const k2 = await doubleFeedStage(flow, app, { context: 'run', cancelled: !!dbl.cancelled, sheets: b.sheets, place: feedPlace(profile) });
+        if (k2 === 'quit') return app.go('home');
+        again = true;
+        continue;
+      }
     }
   }
 

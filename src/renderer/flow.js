@@ -143,20 +143,23 @@ export class Flow {
 
 /**
  * Envía un PDF y acompaña con avance estimado consultando la cola de impresión.
- * Devuelve 'done' | 'skipped'. Lanza error si no se pudo enviar.
+ * Devuelve 'done' | 'skipped' | 'aborted' | la clave de un botón extra. Lanza error si no se pudo enviar.
+ * extra: [{ key, label, icon, cancel }] botones mientras imprime; con cancel se quita el trabajo de la cola.
  */
-export async function printPhase(api, ctl, { file, printer, sheets, secPerSheet, label }) {
+export async function printPhase(api, ctl, { file, printer, sheets, secPerSheet, label, extra = [] }) {
   const name = file.split(/[\\/]/).pop();
   ctl.setProgress(0.02, 'Enviando a la impresora…', '');
-  await api.print({ file, printer });
+  const job = await api.print({ file, printer });
   const warm = 8;
   const est = warm + sheets * secPerSheet;
   const t0 = performance.now();
   let seen = false;
   let skipped = false;
   let warned = false;
+  let picked = null;
   const skipBtn = ctl.addAction({ key: 'skip', label: 'Ya salieron todas', icon: 'check', ghost: true });
-  const skipP = ctl.wait().then((k) => { if (k === 'skip') skipped = true; });
+  const extraBtns = extra.map((a) => ctl.addAction({ ...a, ghost: true }));
+  const skipP = ctl.wait().then((k) => { picked = k; skipped = true; });
 
   while (!skipped && !ctl.aborted?.()) {
     const elapsed = (performance.now() - t0) / 1000;
@@ -184,7 +187,14 @@ export async function printPhase(api, ctl, { file, printer, sheets, secPerSheet,
     await Promise.race([sleep(1500), skipP]);
   }
   skipBtn.remove();
+  extraBtns.forEach((b) => b.remove());
   if (ctl.aborted?.()) return 'aborted'; // se salió del asistente: sin sonido ni velocidad medida a medias
+  const ex = extra.find((a) => a.key === picked);
+  if (ex) {
+    // Falla avisada por la persona: no sigue imprimiendo hojas que saldrían corridas
+    if (ex.cancel) { try { ex.cancelled = await api.cancelJob?.(printer, job?.ref); } catch { ex.cancelled = false; } }
+    return picked;
+  }
   const elapsed = (performance.now() - t0) / 1000;
   ctl.setProgress(1, `${label} · <b>${sheets}</b> de ${sheets}`, 'listo', true);
   play('exito');

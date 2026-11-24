@@ -164,6 +164,7 @@ function registerIpc() {
     return printing.print(file, printer, { paper: prof.paper, color: prof.color, cups: prof.cups });
   });
   handle('job:queue', (printer) => printing.queue(printer));
+  handle('job:cancel', (printer, ref) => (typeof ref === 'string' ? printing.cancel(printer, ref) : false));
   handle('job:calibration', async () => {
     const cal = await compose.buildCalibration(path.join(os.tmpdir(), 'duplex-assistant', 'calibracion'));
     allowedPdfs.add(cal.fronts); allowedPdfs.add(cal.backs);

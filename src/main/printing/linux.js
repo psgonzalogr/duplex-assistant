@@ -57,8 +57,15 @@ async function queue(printer) {
   return r.out.split('\n').filter((l) => l.trim()).map((l) => ({ name: l.split(/\s+/)[0], printed: 0, total: 0, status: '' }));
 }
 
+/** Cancela un trabajo de la cola (ref = id de CUPS, p. ej. «Brother_DCP-T710W-31»). */
+async function cancel(_printer, ref) {
+  if (!ref || !/^[\w.@-]+$/.test(ref)) return false;
+  const r = await run('cancel', [ref]);
+  return r.code === 0;
+}
+
 async function openDriverSettings() { return false; }
 function resetDriverSettings() {}
 function hasProfile() { return false; }
 
-module.exports = { print, queue, printerOptions, openDriverSettings, resetDriverSettings, hasProfile, parseLpoptions };
+module.exports = { print, queue, cancel, printerOptions, openDriverSettings, resetDriverSettings, hasProfile, parseLpoptions };

@@ -114,8 +114,17 @@ async function queue(printer) {
   }
 }
 
+/** Cancela los trabajos de este documento en la cola de Windows (ref = nombre del PDF). */
+async function cancel(printer, ref) {
+  if (!ref) return false;
+  const q = (s) => String(s).replace(/'/g, "''");
+  const cmd = `Get-PrintJob -PrinterName '${q(printer)}' -ErrorAction SilentlyContinue | Where-Object { $_.DocumentName -like '*${q(ref)}*' } | Remove-PrintJob -ErrorAction SilentlyContinue`;
+  const r = await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', cmd], { timeout: 20000 });
+  return r.code === 0;
+}
+
 async function printerOptions() {
   return { kind: 'windows', hasProfile: false, options: [] };
 }
 
-module.exports = { print, queue, openDriverSettings, resetDriverSettings, hasProfile, printerOptions };
+module.exports = { print, queue, cancel, openDriverSettings, resetDriverSettings, hasProfile, printerOptions };

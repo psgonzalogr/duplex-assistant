@@ -1,6 +1,7 @@
 // Calibración: 2 hojas de prueba y una pregunta visual. Guarda el perfil de la impresora.
 import { h, icon, toast } from '../ui.js';
 import { Flow, printPhase } from '../flow.js';
+import { DOUBLE_ACTION, doubleFeedStage } from '../doublefeed.js';
 import { scene, mini, paperGuide, outputChoices, feedChoices, feedPlace, faceWord, voiceForMovement } from '../scenes.js';
 
 /**
@@ -79,7 +80,8 @@ export const ANSWERS = [
   { key: 'swapped', title: 'Dice HOJA 2 · REVERSO', text: 'el reverso quedó en la otra hoja; las flechas coinciden.', minis: [[1], [2]] },
   { key: 'upside', title: 'Dice HOJA 1, pero de cabeza', text: 'la flecha de atrás apunta al borde contrario.', minis: [[1], [1, true]] },
   { key: 'both', title: 'Dice HOJA 2 y de cabeza', text: 'otra hoja y la flecha al revés.', minis: [[1], [2, true]] },
-  { key: 'same-side', title: 'Atrás no hay nada', text: 'el reverso se imprimió encima del frente (las dos caras en el mismo lado).', minis: [[1, false, true]], wide: true },
+  { key: 'same-side', title: 'Atrás no hay nada', text: 'el reverso se imprimió encima del frente (las dos caras en el mismo lado).', minis: [[1, false, true]] },
+  { key: 'double', title: 'Se fueron 2 hojas juntas', text: 'o salió una hoja de más, en blanco o con algo que no corresponde.', minis: [[1], ['+']] },
 ];
 
 export function answerChoices(onPick) {
@@ -174,7 +176,7 @@ export async function runCalibration(root, app) {
       chip: 'act',
       voice: voiceForMovement(profile),
       title: `Toma las 2 hojas y vuelve a ponerlas en ${feedPlace(profile)}`,
-      lead: 'Sigue los 3 pasos de la animación. Puedes repetirla o avanzar a tu ritmo.',
+      lead: 'Sigue los 3 pasos de la animación. Antes de ponerlas, airéalas un poco y deja que se seque la tinta: así la impresora no toma 2 juntas.',
       scene: paperGuide(profile, { sheets: 2 }),
       actions: [{ key: 'go', label: 'Ya las puse · imprimir reversos', primary: true, icon: 'printer' }],
     });
@@ -182,12 +184,17 @@ export async function runCalibration(root, app) {
 
     flow.mark('backs');
     ctl = flow.stage({ chip: 'wait', voice: 'cal-reversos', title: 'Imprimiendo los reversos de prueba', lead: 'Ahora atrás se imprime <b>HOJA 1 · REVERSO</b> y <b>HOJA 2 · REVERSO</b>.', scene: scene('print', { outputFace: profile.outputFace }), progress: true });
+    const dbl = { ...DOUBLE_ACTION };
+    let res;
     try {
-      await printPhase(api, ctl, { file: cal.backs, printer, sheets: 2, secPerSheet: profile.secPerSheet, label: 'Reversos de prueba' });
+      res = await printPhase(api, ctl, { file: cal.backs, printer, sheets: 2, secPerSheet: profile.secPerSheet, label: 'Reversos de prueba', extra: [dbl] });
     } catch (e) {
       toast(e.message, 'warn');
       return app.go('printer');
     }
+    if (res === 'aborted') return;
+    // Hoja doble: el resultado no sirve; se repite la prueba sin guardar nada
+    if (res === 'double') { await doubleFeedStage(flow, app, { context: 'cal', cancelled: !!dbl.cancelled }); continue; }
 
     flow.mark('look');
     let picked;
@@ -200,6 +207,7 @@ export async function runCalibration(root, app) {
     });
     await ctl.wait();
 
+    if (picked === 'double') { await doubleFeedStage(flow, app, { context: 'cal', finished: true }); continue; }
     if (picked === 'same-side') {
       profile = await api.updatePrinter(printer, { faceUp: !profile.faceUp });
       const again = flow.stage({
